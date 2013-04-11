@@ -67,7 +67,11 @@ main (void)
 
   /* If verification was successful, run the shell. */
 	if (verified)
+	{
+		// Needs to be user id
+		setuid (0);
 		wait (exec ("shell"));
+	}
 
 	return EXIT_SUCCESS;
 }

@@ -182,3 +182,15 @@ inumber (int fd)
 {
   return syscall1 (SYS_INUMBER, fd);
 }
+
+int
+setuid (int uid)
+{
+	return syscall1 (SYS_SETUID, uid);
+}
+
+int
+seteuid (int euid)
+{
+	return syscall1 (SYS_SETEUID, euid);
+}

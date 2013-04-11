@@ -12,7 +12,7 @@
 #include "threads/malloc.h"
 #include "filesys/file.h"
 #include <string.h>
-#include "filesys/file.h"
+#include "devices/input.h"
 
 static void syscall_handler (struct intr_frame *);
 static void* syscall_read_stack (struct intr_frame *f, int locale);
@@ -223,6 +223,16 @@ syscall_handler (struct intr_frame *f)
 				close_fd (fd);
 				break;
       }
+		case SYS_SETUID:
+			{
+				/*TODO Implement setuid. */
+				break;
+			}
+		case SYS_SETEUID:
+			{
+				/*TODO Implement seteuid. */
+				break;
+			}
 		default:
 			break;
 	}

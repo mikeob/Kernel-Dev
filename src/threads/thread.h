@@ -95,6 +95,10 @@ struct thread
     struct list_elem allelem;           /* List element for all thread list*/
 		struct list donation_locks;					/* List  donation held by thread. */
     struct list_elem donation_elem;     /* List element for donation list. */
+
+		int ruid;														/* Process real user id. */
+		int euid;														/* Process effective user id. */
+		int suid;														/* Process saved user id. */
  
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
