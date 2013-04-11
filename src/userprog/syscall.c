@@ -134,7 +134,17 @@ syscall_handler (struct intr_frame *f)
         unsigned size = *(unsigned *) syscall_read_stack(f, 3);
 				if (fd == 0)
 					{
-						
+			      int bytes_read = 0;
+            uint8_t key = 0;
+            while (key != '\r' && size > 0)
+            {
+              key = input_getc();
+              memcpy(buffer, &key, 1);
+              buffer++;
+              size--;
+              bytes_read++;
+            }
+            f->eax = bytes_read;			
 					}
 				else
 					{
