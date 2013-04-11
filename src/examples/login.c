@@ -61,6 +61,10 @@ main (void)
 		}
 	}
 
+	/* Close passwd and shadow. */
+	close (passwd_fd);
+	close (shadow_fd);
+
   /* If verification was successful, run the shell. */
 	if (verified)
 		wait (exec ("shell"));
