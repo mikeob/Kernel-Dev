@@ -1,0 +1,22 @@
+
+
+
+1. Argument passing. Every program will page fault until arg
+  passing is implemented.
+
+  In setup_stack(), we can change *esp = PHYS_BASE - 12; to 
+  prevent errors initially.
+
+
+2. User memory access - All system calls need to ready user memory,
+    a few need to write to uesr memory.
+
+3. System call infrastructure. Implement enough code to read the system
+    call number from the user stack and dispatch to a handler based on it.
+
+4. exit() system call.
+
+5. write() system call.
+
+6. process_wait() - turn into an infinite loop. We'll eventually need
+                    to provide correct implementation.
