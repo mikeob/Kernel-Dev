@@ -1,8 +1,16 @@
 #include "filesys/cache.h"
+#include "filesys/file.h"
+#include "filesys/free-map.h"
+#include "filesys/off_t.h"
+#include <debug.h>
+#include <stdio.h>
+#include <string.h>
 
 
 
-
+/* Cache is limited to 64 sectors */
+#define CACHE_LIMIT = 64;
+static struct cache_block * blocks[CACHE_LIMIT];
 
 /* Definition for the cache block. Opaque to outsiders,
  * so we can assume any access to these fields is
@@ -20,11 +28,23 @@ struct cache_block {
   void * data;
 };
 
+struct block *fs_device;
 
 /* Initializes our cache buffer */
 void cache_init (void)
 {
+  fs_device = block_get_role (BLOCK_FILESYS);
+  if (fs_device == NULL)
+    PANIC ("No file system device found, can't initialize file system.");
 
+
+  // Initialize the cache_blocks
+  int i;
+  for (i = 0; i < CACHE_LIMIT; i++)
+  {
+
+
+  }
 
 }
 
