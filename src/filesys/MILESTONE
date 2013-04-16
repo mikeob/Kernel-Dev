@@ -1,0 +1,67 @@
+1. Describe the format of the on-disk inode. Use a C struct.
+
+N will be the amount needed to make the inode_disk struct exactly 512 bytes.
+struct inode_disk
+{
+  struct block_ptr direct[N]; // Index block
+  struct index_block indirect;    
+  struct index_block indirect_two;
+  off_t length;     // File size in bytes (is this needed?)
+  unsigned magic;   // Magic Number (is this needed?)
+}
+
+As calculated below, INDEX_SIZE = 128.
+
+struct index_block
+{
+  struct block_ptr blocks[INDEX_SIZE];
+}
+
+// Struct of size 4 bytes
+struct block_ptr
+{
+  block_sector_t sector;
+}
+
+
+2. How are inodes numbered/addressed on disk?
+
+We'll have them following the superblock, numbered as they appear. This will 
+resemble the Unix v7 implementation. Downside of limiting the number of files in the system. 
+
+
+3. What is the blocksize of your filesystem?
+
+We're going to use 2KB blocks
+
+
+4. Describe your index data structure to keep track of where a file's blocks are 
+located. If you're using traditional index blocks, explain how many 
+sector/block numbers are stored in each index block. 
+Show the math to support the requirements listed in Section 5.3.2
+
+We're going to use traditional index blocks. We'll assume the sector 
+number takes 4 bytes.Thus we can store 128 per index block.  
+  
+
+5. Based on your index design, describe the 
+algorithm for finding a block's on-disk location based on the offset.
+
+We'll first mod the offset by 2KB, determining the block number. Once we've 
+determined the block number, we can determine whether it should be in our 
+direct block array, the first indirect block array, or the second. 
+This can be done because we'll know the length of these direct/indirect 
+blocks and can pinpoint where it should be. The correct array index will be generated, and accessed. 
+
+
+6. Do you plan to implement sparse files (that is, the on-demand allocation of blocks/index blocks)?
+  
+We'll attempt to implement sparse files.
+
+
+7. Describe the (on-disk) directory data structures you'll use. 
+Do you plan on changing the provided implementation and if so, for what benefit?
+  
+ 
+I don't see any need to change the on-disk directory structure. 
+
