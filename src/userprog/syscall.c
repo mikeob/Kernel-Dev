@@ -224,6 +224,71 @@ syscall_handler (struct intr_frame *f)
 				close_fd (fd);
 				break;
       }
+      /* Changes the current working directory to dir 
+       * Returns true on success.*/
+    case SYS_CHDIR: // bool chdir (const char *dir)
+      {
+        const char *dir = *(char **) syscall_read_stack(f, 1);
+        check_pointer ((void *) file);
+
+
+        break;
+
+      }
+      /* Creates the directory dir. Returns true on success.
+       * Fails if dir already exists, or any directory name
+       * in the path does not exist */
+    case SYS_MKDIR: // bool mkdir (const char *dir)
+      {
+        const char *dir = *(char **) syscall_read_stack(f, 1);
+        check_pointer ((void *) file);
+
+        break;
+      }
+      /* Reads a directory from fd. If successful, stores
+       * the null terminated file name in name, which must
+       * have room for READDIR_MAX_LEN + 1 bytes, and returns
+       * true. If no entries left in the directory, return false. 
+       *
+       * If directory changes while open, no worries. 
+       *
+       * Do not return "." or ".."
+       *
+       * READDIR_MAX_LEN defined in lib/user/syscall.h. Will
+       * probably have to change this */
+    case SYS_READDIR: // bool readdir (int fd, char *name)
+      {
+        int fd_ = *(int *) syscall_read_stack(f, 1); 
+        const char *name = *(char **) syscall_read_stack(f, 2);
+        check_pointer ((void *) file);
+
+        struct file_descriptor *fd = check_fd(fd_);
+        if (!fd->is_dir)
+        {
+          f->eax = false;
+          break;
+        }
+
+        break;
+      }
+    case SYS_ISDIR: // bool isdir (int fd)
+      {
+        int fd_ = *(int *) syscall_read_stack(f, 1); 
+        struct file_descriptor *fd = check_fd(fd_);
+        f->eax = fd->is_dir;
+
+        break;
+
+      }
+      /* Returns the inodenumber of the inode associated with fd,
+       * which may represent a file or directory */
+    case SYS_INUMBER:// int inumber (int fd)
+      {
+        int fd = *(int *) syscall_read_stack(f, 1); 
+        //TODO
+
+        break;
+      }
 		default:
 			break;
 	}
