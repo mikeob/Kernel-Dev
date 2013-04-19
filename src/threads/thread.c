@@ -141,9 +141,16 @@ thread_init (void)
   initial_thread->nice = 0;
   initial_thread->recent_cpu = (fixed_point_t) {0};
 
+<<<<<<< HEAD
 	/* Set real user id and gid to 0 (root) */
 	initial_thread->ruid = 0;
 	initial_thread->rgid = 0;
+=======
+	/* Set user ids to 0 (root) */
+	initial_thread->ruid = 0;
+  initial_thread->euid = 0;
+	initial_thread->suid = 0;
+>>>>>>> f8a335e50c1ea8da5af5f34e02cccc0fa66bb9fe
 }
 /* Starts preemptive thread scheduling by enabling interrupts.
    Also creates the idle thread. */
@@ -255,11 +262,10 @@ thread_create (const char *name, int priority,
   tid = t->tid = allocate_tid ();
 	t->parent_tid = thread_current ()->tid;
  
- 	/* Inherit parent's ruid and rgid */
+ 	/* Inherit parent's uids */
   t->ruid = thread_current ()->ruid;
-	t->rgid = thread_current ()->rgid;
-
-	printf("ruid: %d, rgid: %d\n", t->ruid, t->rgid);
+	t->euid = thread_current ()->euid;
+  t->suid = thread_current ()->suid;
 
   /* BSD parameters */
   if (thread_mlfqs)
