@@ -239,8 +239,9 @@ syscall_handler (struct intr_frame *f)
 					{
 						/* Do not let unprivileged users gain privileged access */
 						if (id == 0)
-							syscall_exit(-1);
-						thread_current ()->euid = id;
+							f->eax = -1;
+						else
+							thread_current ()->euid = id;
 					}
 				break;
 			}
@@ -263,6 +264,7 @@ syscall_handler (struct intr_frame *f)
 					{
 						thread_current ()->euid = id;
 					}
+				f->eax = 0;
 				break;
 			}
 		default:
