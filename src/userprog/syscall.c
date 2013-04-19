@@ -225,12 +225,44 @@ syscall_handler (struct intr_frame *f)
       }
 		case SYS_SETUID:
 			{
-				/*TODO Implement setuid. */
+				/* sets the effective user ID of the calling process. 
+				 * If the effective UID of the caller is root, 
+				 * the real UID and saved set-user-ID are also set. */
+				int id = *(int *) syscall_read_stack(f, 1);
+				if (thread_current ()->euid == 0) 
+					{
+						thread_current ()->euid = id;
+						thread_current ()->suid = id;
+						thread_current ()->ruid = id;
+					}
+				else
+					{
+						/* Do not let unprivileged users gain privileged access */
+						if (id == 0)
+							syscall_exit(-1);
+						thread_current ()->euid = id;
+					}
 				break;
 			}
 		case SYS_SETEUID:
 			{
-				/*TODO Implement seteuid. */
+				/* sets the effective user ID of the calling process. 
+				 * Unprivileged user processes may only set the effective user ID to 
+				 * the real user ID, the effective user ID or the saved set-user-ID. */
+				int id = *(int *) syscall_read_stack(f, 1);
+				if (thread_current ()->ruid > 0 || thread_current ()->euid > 0) 
+					{
+					/* Unprivileged user */
+						if (id != thread_current()->ruid || id != thread_current ()->euid 
+								|| id != thread_current()->suid)
+							{
+								thread_current ()->euid = id;
+							}
+					}
+				else 
+					{
+						thread_current ()->euid = id;
+					}
 				break;
 			}
 		default:
