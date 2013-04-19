@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <syscall.h>
 #include <string.h>
+#include <stdlib.h>
 
 static void read_line (char line[], size_t, bool password);
 static bool backspace (char **pos, char line[]);
@@ -31,6 +32,7 @@ main (void)
 		create ("etc/passwd", 10000);
 		passwd_fd = open ("etc/passwd");
 		write (passwd_fd, "root:x:0:0\n", 11);
+		write (passwd_fd, "kevin:x:1:1\n", 12);
 	}
 
   /* Create shadow if it does not exist and open it adding
@@ -40,6 +42,7 @@ main (void)
 		create ("etc/shadow", 10000);
 		shadow_fd = open ("etc/shadow"); 
 		write (shadow_fd, "root:root\n", 10);
+		write (shadow_fd, "kevin:kevin\n", 12);
 	}
 
   /* Attempt first verification. */
@@ -60,19 +63,17 @@ main (void)
 				break;
 		}
 	}
-
+	
 	/* Close passwd and shadow. */
 	close (passwd_fd);
 	close (shadow_fd);
-
-  /* If verification was successful, run the shell. */
+  
+	/* If verification was successful, run the shell. */
 	if (verified)
 	{
-		// Needs to be user id
-		setuid (0);
 		wait (exec ("shell"));
 	}
-
+	
 	return EXIT_SUCCESS;
 }
 
@@ -100,7 +101,7 @@ verify (char *username, char *userpasswd, int passwd_fd, int shadow_fd)
 			read (fd, &c, 1);
 			if (c == ':')
 				break;
-   	 memcpy (insert, &c, 1);
+   	 	memcpy (insert, &c, 1);
 			insert++;
 		}
 
@@ -130,8 +131,56 @@ verify (char *username, char *userpasswd, int passwd_fd, int shadow_fd)
 
 			/* If the password matches then return true for
        * verification. */
-			if (!strcmp (userpasswd, temp_string))
+			if (!strcmp (userpasswd, temp_string)) 
+			{
+				char user[100];
+				memset(user, 0, 100);
+				seek(passwd_fd, 0);
+
+				for (;;)
+				{
+					memset(temp_string, 0, 20);
+					insert = temp_string;
+					for (i = 0; i < 20; i++)
+						{						
+							read (passwd_fd, &c, 1);
+							if (c == ':')
+								break;
+							memcpy (insert, &c, 1);
+							insert++;
+						}
+					if (!strcmp (username, temp_string))
+						break;
+					else
+						{
+							while (c != '\n' && c != '\0') {
+								read (passwd_fd, &c, 1);
+							}
+						}
+				}
+				
+				insert = user;
+				for (i = 0; i < 100; i++)
+					{
+						read(passwd_fd, &c, 1);
+						if (c == '\n')
+							break;
+						memcpy (insert, &c, 1);
+						insert++;
+					}	
+
+				char* ptr = "";
+				char** saveptr = &ptr;
+				/* First call to strtok_r returns 'x', because password is in shadow */
+				strtok_r (user, ":", saveptr);
+				char* uid = strtok_r (NULL, ":", saveptr);
+				char* guid = strtok_r (NULL, ":", saveptr);
+
+				setuid (atoi (uid));
+				// setguid (atoi (guid));
+			
 				return true;
+			}
 	
 			/* Password did not match. */
 			return false;
