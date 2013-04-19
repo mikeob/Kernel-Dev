@@ -239,7 +239,10 @@ syscall_handler (struct intr_frame *f)
 					{
 						/* Do not let unprivileged users gain privileged access */
 						if (id == 0)
-							f->eax = -1;
+							{
+								f->eax = -1;
+								break;
+							}
 						else
 							thread_current ()->euid = id;
 					}
@@ -259,6 +262,11 @@ syscall_handler (struct intr_frame *f)
 							{
 								thread_current ()->euid = id;
 							}
+						else 
+							{
+								f->eax = -1;
+								break;
+							}
 					}
 				else 
 					{
@@ -272,6 +280,25 @@ syscall_handler (struct intr_frame *f)
 				/* sets the effective group ID of the calling process. 
 				 * If the caller is the superuser, the real GID and saved set-group-ID 
 				 * are also set. */
+				int id = *(int *) syscall_read_stack(f, 1);
+				if (thread_current ()->euid == 0) 
+					{
+						thread_current ()->egid = id;
+						thread_current ()->sgid = id;
+						thread_current ()->rgid = id;
+					}
+				else
+					{
+						/* Do not let unprivileged users gain privileged access */
+						if (id == 0)
+							{
+								f->eax = -1;
+								break;
+							}
+						else
+							thread_current ()->egid = id;
+					}
+				f->eax = 0;
 				break;
 			}
 		case SYS_SETEGID:
@@ -279,6 +306,26 @@ syscall_handler (struct intr_frame *f)
 				/* sets the effective group ID of the calling process. 
 				 * Unprivileged user processes may only set the effective group ID to 
 				 * the real group ID, the effective group ID or the saved set-group-ID. */
+				int id = *(int *) syscall_read_stack(f, 1);
+				if (thread_current ()->ruid > 0 || thread_current ()->euid > 0) 
+					{
+					/* Unprivileged user */
+						if (id != thread_current()->rgid || id != thread_current ()->egid 
+								|| id != thread_current()->sgid)
+							{
+								thread_current ()->egid = id;
+							}
+						else
+							{
+								f->eax = -1;
+								break;
+							}
+					}
+				else 
+					{
+						thread_current ()->egid = id;
+					}
+				f->eax = 0;
 				break;
 			}
 		default:

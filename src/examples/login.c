@@ -174,10 +174,10 @@ verify (char *username, char *userpasswd, int passwd_fd, int shadow_fd)
 				/* First call to strtok_r returns 'x', because password is in shadow */
 				strtok_r (user, ":", saveptr);
 				char* uid = strtok_r (NULL, ":", saveptr);
-				char* guid = strtok_r (NULL, ":", saveptr);
+				char* gid = strtok_r (NULL, ":", saveptr);
 
+				setgid (atoi (gid));
 				setuid (atoi (uid));
-				// setguid (atoi (guid));
 			
 				return true;
 			}
