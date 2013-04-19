@@ -267,6 +267,20 @@ syscall_handler (struct intr_frame *f)
 				f->eax = 0;
 				break;
 			}
+		case SYS_SETGID:
+			{
+				/* sets the effective group ID of the calling process. 
+				 * If the caller is the superuser, the real GID and saved set-group-ID 
+				 * are also set. */
+				break;
+			}
+		case SYS_SETEGID:
+			{
+				/* sets the effective group ID of the calling process. 
+				 * Unprivileged user processes may only set the effective group ID to 
+				 * the real group ID, the effective group ID or the saved set-group-ID. */
+				break;
+			}
 		default:
 			break;
 	}

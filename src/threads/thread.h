@@ -99,7 +99,12 @@ struct thread
 		int ruid;														/* Process real user id. */
 		int euid;														/* Process effective user id. */
 		int suid;														/* Process saved user id. */
+
+ 		int rgid;														/* Process real group id. */
+		int egid;														/* Process effective group id. */
+		int sgid;														/* Process saved group id. */
  
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 

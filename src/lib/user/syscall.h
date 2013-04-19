@@ -48,5 +48,7 @@ int inumber (int fd);
 /* Open ended project. */
 int setuid (int uid);
 int seteuid (int euid);
+int setgid (int gid);
+int setegid (int egid);
 
 #endif /* lib/user/syscall.h */

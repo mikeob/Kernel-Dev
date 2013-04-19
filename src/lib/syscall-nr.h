@@ -31,8 +31,10 @@ enum
     SYS_INUMBER,                 /* Returns the inode number for a fd. */
 
 		/* Open ended project. */
-		SYS_SETUID,									/* Set the effective user id (Different for superuser. */
+		SYS_SETUID,									/* Set the user id */
 		SYS_SETEUID,								/* Set the effective user id.*/
+		SYS_SETGID,									/* Set the group id */
+		SYS_SETEGID,								/* Set the effective group id */
   };
 
 #endif /* lib/syscall-nr.h */

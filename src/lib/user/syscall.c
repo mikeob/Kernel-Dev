@@ -194,3 +194,15 @@ seteuid (int euid)
 {
 	return syscall1 (SYS_SETEUID, euid);
 }
+
+int
+setgid (int gid)
+{
+	return syscall1 (SYS_SETUID, gid);
+}
+
+int
+setegid (int egid)
+{
+	return syscall1 (SYS_SETEUID, egid);
+}
