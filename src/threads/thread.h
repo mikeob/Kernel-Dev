@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include "threads/fixed-point.h"
 #include "synch.h"
+#include "filesys/directory.h"
+
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -111,6 +113,9 @@ struct thread
     /* Used by BSD scheduler */
     int nice;                           /* Niceness value */
     fixed_point_t recent_cpu;           /* recent_cpu value */
+
+    /* Used by filesystem */
+    struct dir *cur_dir;              /* Current Directory */
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
