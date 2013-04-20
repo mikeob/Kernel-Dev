@@ -13,6 +13,7 @@
 #include "filesys/file.h"
 #include <string.h>
 #include "filesys/file.h"
+#include "devices/input.h"
 
 static void syscall_handler (struct intr_frame *);
 static void* syscall_read_stack (struct intr_frame *f, int locale);
@@ -229,7 +230,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_CHDIR: // bool chdir (const char *dir)
       {
         const char *dir = *(char **) syscall_read_stack(f, 1);
-        check_pointer ((void *) file);
+        check_pointer ((void *) dir);
 
 
         break;
@@ -241,7 +242,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_MKDIR: // bool mkdir (const char *dir)
       {
         const char *dir = *(char **) syscall_read_stack(f, 1);
-        check_pointer ((void *) file);
+        check_pointer ((void *) dir);
 
         break;
       }
@@ -260,7 +261,7 @@ syscall_handler (struct intr_frame *f)
       {
         int fd_ = *(int *) syscall_read_stack(f, 1); 
         const char *name = *(char **) syscall_read_stack(f, 2);
-        check_pointer ((void *) file);
+        check_pointer ((void *) name);
 
         struct file_descriptor *fd = check_fd(fd_);
         if (!fd->is_dir)
