@@ -6,6 +6,18 @@
 #include "filesys/inode.h"
 #include "threads/malloc.h"
 
+
+
+
+/* TODO
+ *
+ * 1. Make sure directories can expand beyond original size
+ * 2. Modify so directories can point to other directories
+ * */
+
+
+
+
 /* A directory. */
 struct dir 
   {
