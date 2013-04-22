@@ -101,9 +101,12 @@ verify (char *username, char *userpasswd, int passwd_fd, int shadow_fd, char *ui
 
 				/* First call to strtok_r returns 'x', because password is in shadow */
 				strtok_r (user, ":", saveptr);
-	
-				strlcpy(uid, strtok_r (NULL, ":", saveptr), 6);				
-				strlcpy(gid, strtok_r (NULL, ":", saveptr), 6);
+
+				if (uid != NULL)	
+					strlcpy(uid, strtok_r (NULL, ":", saveptr), 6);
+				
+				if (gid != NULL)				
+					strlcpy(gid, strtok_r (NULL, ":", saveptr), 6);
 	
 				return true;
 			}
