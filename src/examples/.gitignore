@@ -17,6 +17,13 @@ lineup
 matmult
 recursor
 login
+sudo
+chmod
+passwd
+useradd
+userdel
+groupadd
+groupdel
 *.d
 *.o
 *.a
