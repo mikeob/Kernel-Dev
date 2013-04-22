@@ -50,5 +50,9 @@ int setuid (int uid);
 int seteuid (int euid);
 int setgid (int gid);
 int setegid (int egid);
+int getuid (void);
+int geteuid (void);
+int getgid (void);
+int getegid (void);
 
 #endif /* lib/user/syscall.h */

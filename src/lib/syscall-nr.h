@@ -35,6 +35,10 @@ enum
 		SYS_SETEUID,								/* Set the effective user id.*/
 		SYS_SETGID,									/* Set the group id */
 		SYS_SETEGID,								/* Set the effective group id */
+		SYS_GETUID,									/* Get the user id */
+		SYS_GETEUID,								/* Get the effective user id.*/
+		SYS_GETGID,									/* Get the group id */
+		SYS_GETEGID,								/* Get the effective group id */
   };
 
 #endif /* lib/syscall-nr.h */

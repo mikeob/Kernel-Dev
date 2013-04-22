@@ -141,16 +141,11 @@ thread_init (void)
   initial_thread->nice = 0;
   initial_thread->recent_cpu = (fixed_point_t) {0};
 
-<<<<<<< HEAD
 	/* Set real user id and gid to 0 (root) */
-	initial_thread->ruid = 0;
-	initial_thread->rgid = 0;
-=======
-	/* Set user ids to 0 (root) */
 	initial_thread->ruid = 0;
   initial_thread->euid = 0;
 	initial_thread->suid = 0;
->>>>>>> f8a335e50c1ea8da5af5f34e02cccc0fa66bb9fe
+	initial_thread->rgid = 0;
 }
 /* Starts preemptive thread scheduling by enabling interrupts.
    Also creates the idle thread. */

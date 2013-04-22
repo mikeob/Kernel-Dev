@@ -206,3 +206,27 @@ setegid (int egid)
 {
 	return syscall1 (SYS_SETEGID, egid);
 }
+
+int
+getuid ()
+{
+	return syscall0 (SYS_GETUID);
+}
+
+int
+geteuid ()
+{
+	return syscall0 (SYS_GETEUID);
+}
+
+int
+getgid ()
+{
+	return syscall0 (SYS_GETGID);
+}
+
+int
+getegid ()
+{
+	return syscall0 (SYS_GETEGID);
+}
