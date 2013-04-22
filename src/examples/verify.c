@@ -5,12 +5,18 @@
 #include "verify.h"
 
 bool
-verify (char *username, char *userpasswd, int passwd_fd, int shadow_fd, char *uid, char *gid)
+verify (char *username, char *userpasswd, char *uid, char *gid)
 {
 	char temp_string [20];
 	char *insert;
 	char c;
-	int i, fd = passwd_fd;
+	int i, fd;
+	bool successful = false;
+
+	int passwd_fd = open ("etc/passwd");
+	int shadow_fd = open ("etc/shadow");
+
+	fd = passwd_fd;
 
   /* Start at beginning of both files. */
 	seek (passwd_fd, 0);
@@ -108,11 +114,12 @@ verify (char *username, char *userpasswd, int passwd_fd, int shadow_fd, char *ui
 				if (gid != NULL)				
 					strlcpy(gid, strtok_r (NULL, ":", saveptr), 6);
 	
-				return true;
+				successful = true;
 			}
 	
-			/* Password did not match. */
-			return false;
+			close (shadow_fd);
+			close (passwd_fd);
+			return successful;
 		}
 
 		/* If username entered does not match the username we 

@@ -52,7 +52,7 @@ main (void)
 	}
 
   /* Attempt first verification. */
-	verified = verify (username, userpasswd, passwd_fd, shadow_fd, uid, gid);
+	verified = verify (username, userpasswd, uid, gid);
 
   /* If verification failed, give user nine more tries. */
 	if (!verified)
@@ -64,7 +64,7 @@ main (void)
  			read_line (username, sizeof username, false);
  			printf ("Password: ");
  			read_line (userpasswd, sizeof userpasswd, true);
-			verified = verify (username, userpasswd, passwd_fd, shadow_fd, uid, gid);
+			verified = verify (username, userpasswd, uid, gid);
 			if (verified)
 				break;
 		}
