@@ -54,7 +54,8 @@ syscall_handler (struct intr_frame *f)
       {
 			  const char *cmd_line = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) cmd_line);
-				
+			
+        //TODO Will need to split path in process_execute
         tid_t tid = process_execute (cmd_line);
 			  f->eax = tid;
 				break;
@@ -65,6 +66,7 @@ syscall_handler (struct intr_frame *f)
         check_pointer((void *) file);
 
         unsigned initial_size = *(unsigned *) syscall_read_stack(f, 2);
+        //TODO SPLIT PATH
 				
 				lock_acquire (&file_lock);
 				f->eax = filesys_create (file, initial_size);	
@@ -74,6 +76,7 @@ syscall_handler (struct intr_frame *f)
       }
 		case SYS_REMOVE: 
       {
+        //TODO SPLIT PATH
         const char *file = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) file);
 			  lock_acquire (&file_lock);
@@ -84,6 +87,7 @@ syscall_handler (struct intr_frame *f)
 		case SYS_OPEN:
       {
 	
+        //TODO SPLIT PATH
         const char *file = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) file);
 
@@ -244,6 +248,8 @@ syscall_handler (struct intr_frame *f)
         const char *dir = *(char **) syscall_read_stack(f, 1);
         check_pointer ((void *) dir);
 
+        //TODO SPLIT PATH
+
         break;
       }
       /* Reads a directory from fd. If successful, stores
@@ -302,6 +308,8 @@ void close_fd (int fd)
 	list_remove (&fd_->elem);
 	free(fd_);
 }
+
+
 
 static
 void* syscall_read_stack (struct intr_frame *f, int locale) 

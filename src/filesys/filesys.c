@@ -2,6 +2,8 @@
 #include <debug.h>
 #include <stdio.h>
 #include <string.h>
+#include "threads/malloc.h"
+#include "threads/thread.h"
 #include "filesys/file.h"
 #include "filesys/free-map.h"
 #include "filesys/inode.h"
@@ -89,6 +91,59 @@ filesys_remove (const char *name)
 
   return success;
 }
+
+
+/* Translates a path into the directory
+ * that is needed to access/modify the file 
+ *
+ * Returns NULL upon a directory non-existant in
+ * the path, or if any of the 'directories' 
+ * are just files. */
+static struct dir *
+path_to_dir (const char *path)
+{
+ char *copy = malloc(strlen(path)); 
+ if (copy == NULL)
+ {
+   PANIC("Malloc failure");
+ }
+ 
+ strlcpy(copy, path, strlen(path));
+
+ struct dir *cur;
+
+ // Start at root
+ if (copy[0] == '/')
+ {
+    cur = dir_open_root ();
+    copy++;
+ }
+ else // Else relative path
+ {
+    cur = thread_current ()->cur_dir;
+ }
+
+
+
+ //TODO How do I handle '..'?
+
+ /* 
+  * char *token, *save_ptr
+  *
+  * for (token = strtok_r (copy, "/", &save_ptr); token != NULL; 
+  *     token = strtok_r (NULL, "/", &save_ptr))
+  *     
+  *     */
+
+
+
+ 
+
+ free(copy);
+
+}
+
+
 
 /* Formats the file system. */
 static void
