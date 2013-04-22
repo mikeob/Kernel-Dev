@@ -2,10 +2,10 @@
 #include <syscall.h>
 #include <string.h>
 #include <stdlib.h>
+#include "verify.h"
 
 static void read_line (char line[], size_t, bool password);
 static bool backspace (char **pos, char line[]);
-static bool verify (char *username, char *userpasswd, int passwd_fd, int shadow_fd);
 
 int
 main (void) 
@@ -14,6 +14,8 @@ main (void)
   char userpasswd [20];
   int i;
   bool verified = false;
+	char uid [6];
+	char gid [6];
 
 	/* Get first user login attempt. */
 	printf ("Username: ");
@@ -33,6 +35,8 @@ main (void)
 		passwd_fd = open ("etc/passwd");
 		write (passwd_fd, "root:x:0:0\n", 11);
 		write (passwd_fd, "kevin:x:1:1\n", 12);
+		write (passwd_fd, "ollie:x:2:2\n", 12);
+		write (passwd_fd, "mike:x:3:3\n", 11);
 	}
 
   /* Create shadow if it does not exist and open it adding
@@ -43,10 +47,12 @@ main (void)
 		shadow_fd = open ("etc/shadow"); 
 		write (shadow_fd, "root:root\n", 10);
 		write (shadow_fd, "kevin:kevin\n", 12);
+		write (shadow_fd, "ollie:ollie\n", 12);
+		write (shadow_fd, "mike:mike\n", 10);
 	}
 
   /* Attempt first verification. */
-	verified = verify (username, userpasswd, passwd_fd, shadow_fd);
+	verified = verify (username, userpasswd, passwd_fd, shadow_fd, uid, gid);
 
   /* If verification failed, give user nine more tries. */
 	if (!verified)
@@ -58,7 +64,7 @@ main (void)
  			read_line (username, sizeof username, false);
  			printf ("Password: ");
  			read_line (userpasswd, sizeof userpasswd, true);
-			verified = verify (username, userpasswd, passwd_fd, shadow_fd);
+			verified = verify (username, userpasswd, passwd_fd, shadow_fd, uid, gid);
 			if (verified)
 				break;
 		}
@@ -71,137 +77,13 @@ main (void)
 	/* If verification was successful, run the shell. */
 	if (verified)
 	{
+		setgid (atoi (gid));
+		setuid (atoi (uid));
+	
 		wait (exec ("shell"));
 	}
 	
 	return EXIT_SUCCESS;
-}
-
-static bool
-verify (char *username, char *userpasswd, int passwd_fd, int shadow_fd)
-{
-	char temp_string [20];
-	char *insert;
-	char c;
-	int i, fd = passwd_fd;
-
-  /* Start at beginning of both files. */
-	seek (passwd_fd, 0);
-	seek (shadow_fd, 0);
-
-  /* Loop through files. */
-	for (;;)
-	{
-		insert = temp_string;
-		memset (temp_string, 0, 20);
-	
-    /* Read username. */
-		for (i = 0; i < 20; i++)
-		{
-			read (fd, &c, 1);
-			if (c == ':')
-				break;
-   	 	memcpy (insert, &c, 1);
-			insert++;
-		}
-
-    /* If username entered matches a username in passwd,
-     * switch to shadow file and find username in it. */
-		if (!strcmp (username, temp_string) && fd == passwd_fd)
-		{
-				fd = shadow_fd;
-		}
-
-    /* If username entered and found in passwd matches
-     * a username in shadow, verify the password matches. */
-		else if (!strcmp (username, temp_string))
-		{
-			insert = temp_string;
-			memset (temp_string, 0, 20);
-
-			/* Grab the password in shadow. */
-			for (i = 0; i < 20; i++)
-			{
-				read (fd, &c, 1);
-				if (c == '\n')
-					break;
-    		memcpy (insert, &c, 1);
-				insert++;
-			}
-
-			/* If the password matches then return true for
-       * verification. */
-			if (!strcmp (userpasswd, temp_string)) 
-			{
-				char user[100];
-				memset(user, 0, 100);
-				seek(passwd_fd, 0);
-
-				for (;;)
-				{
-					memset(temp_string, 0, 20);
-					insert = temp_string;
-					for (i = 0; i < 20; i++)
-						{						
-							read (passwd_fd, &c, 1);
-							if (c == ':')
-								break;
-							memcpy (insert, &c, 1);
-							insert++;
-						}
-					if (!strcmp (username, temp_string))
-						break;
-					else
-						{
-							while (c != '\n' && c != '\0') {
-								read (passwd_fd, &c, 1);
-							}
-						}
-				}
-				
-				insert = user;
-				for (i = 0; i < 100; i++)
-					{
-						read(passwd_fd, &c, 1);
-						if (c == '\n')
-							break;
-						memcpy (insert, &c, 1);
-						insert++;
-					}	
-
-				char* ptr = "";
-				char** saveptr = &ptr;
-				/* First call to strtok_r returns 'x', because password is in shadow */
-				strtok_r (user, ":", saveptr);
-				char* uid = strtok_r (NULL, ":", saveptr);
-				char* gid = strtok_r (NULL, ":", saveptr);
-
-				setgid (atoi (gid));
-				setuid (atoi (uid));
-			
-				return true;
-			}
-	
-			/* Password did not match. */
-			return false;
-		}
-
-		/* If username entered does not match the username we 
-     * just grabbed from the file, grab next username in file. */
-		else
-		{
-			while (c != '\n' && c != '\0')
-				read (fd, &c, 1);
-
-			if (read (fd, &c, 1) == 0 || c == '\0')
-				break;
-		
-			seek (fd, tell (fd) - 1);
-		}
-	}
-
-  /* Username was not found. */
-	return false;
 }
 
 /* Reads a line of input from the user into LINE, which has room

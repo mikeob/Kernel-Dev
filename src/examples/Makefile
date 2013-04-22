@@ -32,7 +32,7 @@ pwd_SRC = pwd.c
 shell_SRC = shell.c
 
 # Should work in open ended project.
-login_SRC = login.c
+login_SRC = login.c verify.c
 getty_SRC = getty.c
 sudo_SRC = sudo.c
 chmod_SRC = chmod.c
