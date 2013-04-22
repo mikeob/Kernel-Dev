@@ -281,16 +281,9 @@ thread_create (const char *name, int priority,
   ex->parent = thread_current()->tid; 
   sema_init(&ex->sema, 0);
 
-  /* Default starting directory to '/' 
-   * for the idle thread            */
-  if (function == idle) 
-  {
-    t->cur_dir = dir_open_root ();
-  }
-  else /* Otherwise, get cur_dir from parent */
-  {
-    t->cur_dir = thread_current ()->cur_dir;
-  }
+  /* Get current directory from parent */
+  t->cur_dir = thread_current ()->cur_dir;
+
   /* No lock necessary - thread specific list */ 
   list_push_back(&thread_current()->exit_list, &ex->elem);
 

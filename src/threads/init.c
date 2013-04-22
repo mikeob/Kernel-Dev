@@ -133,6 +133,9 @@ main (void)
   filesys_init (format_filesys);
 #endif
 
+  /* Set the current directory to the root */
+  thread_current ()->cur_dir = dir_open_root ();
+
   printf ("Boot complete.\n");
   
   /* Run actions specified on kernel command line. */
