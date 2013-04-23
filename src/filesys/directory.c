@@ -28,7 +28,7 @@ bool
 dir_create (block_sector_t sector, size_t entry_cnt)
 {
 
-  bool result = inode_create (sector, entry_cnt * sizeof (struct dir_entry));
+  bool result = inode_create (sector, entry_cnt * sizeof (struct dir_entry), true);
   
   struct inode *new_inode = inode_open (sector);
   if (new_inode == NULL)

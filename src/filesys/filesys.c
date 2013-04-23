@@ -51,7 +51,7 @@ filesys_create (const char *name, off_t initial_size)
   struct dir *dir = dir_open_root ();
   bool success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
-                  && inode_create (inode_sector, initial_size)
+                  && inode_create (inode_sector, initial_size, false)
                   && dir_add (dir, name, inode_sector));
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);
@@ -92,55 +92,130 @@ filesys_remove (const char *name)
   return success;
 }
 
-
-/* Translates a path into the directory
- * that is needed to access/modify the file 
+/* Given a -MUTABLE- path, returns the directory 
+ * that contains the last file in the path.
  *
- * Returns NULL upon a directory non-existant in
- * the path, or if any of the 'directories' 
- * are just files. */
+ * Used for file/directory creation.
+ *
+ * Requires that it is given a mutable string,
+ * and passes the filename of the final path entry
+ * back to the caller. On failure, returns NULL.
+ *
+ * */
 static struct dir *
-path_to_dir (const char *path)
+path_to_dir (char *path, char **filename)
 {
- char *copy = malloc(strlen(path)); 
- if (copy == NULL)
- {
-   PANIC("Malloc failure");
- }
- 
- strlcpy(copy, path, strlen(path));
 
- struct dir *cur;
+  struct dir *cur_dir;
+  struct dir *ans;
+
+  if (path[0] == '/')
+  {
+    cur_dir = dir_open_root ();
+    path++;
+  }
+  else
+  {
+    cur_dir = thread_current ()->cur_dir;
+  }
+
+  ans = cur_dir;
+
+  char *token, *save_ptr;
+  struct inode *cur_inode;
+
+  for (token = strtok_r (path, "/", &save_ptr); token != NULL;
+      token = strtok_r (NULL, "/", &save_ptr))
+  {
+      // Verify file exists
+      if (cur_dir == NULL || !dir_lookup(cur_dir, token, &cur_inode))
+      {
+          inode_close(cur_inode);
+          dir_close(cur_dir);
+          dir_close(ans);
+          return NULL;
+      }
+      
+      /* Maintain reference for our answer */
+      *filename = token;
+      dir_close(ans);
+      ans = cur_dir;
+
+      // cur_inode is a file. Either we're on the last token, or failure.
+      if (!inode_is_dir(cur_inode))
+      {
+        cur_dir = NULL;
+      }
+      else
+      {
+        cur_dir = dir_open(cur_inode);
+        inode_close(cur_inode);
+      }
+
+  }
+
+  return ans;
+}
+
+
+/* Given a -MUTABLE- path, returns the inode associated
+ * with the last file in the path.
+ *
+ * Will fail if any of the inodes along
+ * the way do not exist, or if they are files.
+ *
+ * The caller is expected to close the provided inode.
+ *
+ * */
+static struct inode *
+path_to_file (char *path)
+{
+
+ struct dir *cur_dir;
 
  // Start at root
- if (copy[0] == '/')
+ if (path[0] == '/')
  {
-    cur = dir_open_root ();
-    copy++;
+    cur_dir = dir_open_root ();
+    path++;
  }
- else // Else relative path
+ // Else relative path
+ else
  {
-    cur = thread_current ()->cur_dir;
+    cur_dir = thread_current ()->cur_dir;
  }
 
+ char *token, *save_ptr;
+ struct inode *cur_inode;
 
+ for (token = strtok_r(path, "/", &save_ptr); token != NULL;
+     token = strtok_r(NULL, "/", &save_ptr))
+ {
+    // If file doesn't exist in current directory
+    if (cur_dir == NULL || !dir_lookup(cur_dir, token, &cur_inode))
+    {
+      dir_close(cur_dir);
+      inode_close(cur_inode);
+      return NULL;
+    }
 
- //TODO How do I handle '..'?
+    dir_close(cur_dir);
 
- /* 
-  * char *token, *save_ptr
-  *
-  * for (token = strtok_r (copy, "/", &save_ptr); token != NULL; 
-  *     token = strtok_r (NULL, "/", &save_ptr))
-  *     
-  *     */
+    // cur_inode is a file. Either we're on the last token, or we fail. 
+    if (!inode_is_dir(cur_inode))
+    {
+      cur_dir = NULL;
+    }
+    else
+    {
+      cur_dir = dir_open(cur_inode);
+      inode_close(cur_inode);
+    }
+    
 
+ }
 
-
- 
-
- free(copy);
-
+ return cur_inode;
 }
 
 
