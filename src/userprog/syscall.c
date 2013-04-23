@@ -331,18 +331,22 @@ syscall_handler (struct intr_frame *f)
 		case SYS_GETUID:
 			{
 				f->eax = thread_current ()->ruid;
+				break;
 			}
 		case SYS_GETEUID:
 			{
 				f->eax = thread_current ()->euid;
+				break;
 			}
 		case SYS_GETGID:
 			{
 				f->eax = thread_current ()->rgid;
+				break;
 			}
 		case SYS_GETEGID:
 			{
 				f->eax = thread_current ()->egid;
+				break;
 			}
 		default:
 			break;

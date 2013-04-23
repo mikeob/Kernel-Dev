@@ -42,6 +42,9 @@ verify (char *username, char *userpasswd, char *uid, char *gid)
      * switch to shadow file and find username in it. */
 		if (!strcmp (username, temp_string) && fd == passwd_fd)
 		{
+				read (fd, &c, 1);
+				if (c != 'x')
+					break;
 				fd = shadow_fd;
 		}
 

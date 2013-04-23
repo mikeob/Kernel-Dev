@@ -10,8 +10,8 @@ static bool backspace (char **pos, char line[]);
 int
 main (void) 
 {
-	char username [20];
-  char userpasswd [20];
+	char username [21];
+  char userpasswd [21];
   int i;
   bool verified = false;
 	char uid [6];
