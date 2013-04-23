@@ -3,15 +3,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include "verify.h"
-
-static void read_line (char line[], size_t, bool password);
-static bool backspace (char **pos, char line[]);
+#include "cmdline.h"
 
 int
 main (void) 
 {
-	char username [21];
-  char userpasswd [21];
+	char username [20];
+  char userpasswd [20];
   int i;
   bool verified = false;
 	char uid [6];
@@ -86,64 +84,3 @@ main (void)
 	return EXIT_SUCCESS;
 }
 
-/* Reads a line of input from the user into LINE, which has room
-   for SIZE bytes.  Handles backspace and Ctrl+U in the ways
-   expected by Unix users.  On return, LINE will always be
-   null-terminated and will not end in a new-line character. */
-static void
-read_line (char line[], size_t size, bool password) 
-{
-  char *pos = line;
-  for (;;)
-    {
-      char c;
-      read (STDIN_FILENO, &c, 1);
-
-      switch (c) 
-        {
-        case '\r':
-          *pos = '\0';
-          putchar ('\n');
-          return;
-
-        case '\b':
-          backspace (&pos, line);
-          break;
-
-        case ('U' - 'A') + 1:       /* Ctrl+U. */
-          while (backspace (&pos, line))
-            continue;
-          break;
-
-        default:
-          /* Add character to line. */
-          if (pos < line + size - 1) 
-            {
-							if (password)
-								putchar ('*');
-							else
-              	putchar (c);
-              *pos++ = c;
-            }
-          break;
-        }
-    }
-}
-
-/* If *POS is past the beginning of LINE, backs up one character
-   position.  Returns true if successful, false if nothing was
-   done. */
-static bool
-backspace (char **pos, char line[]) 
-{
-  if (*pos > line)
-    {
-      /* Back up cursor, overwrite character, back up
-         again. */
-      printf ("\b \b");
-      (*pos)--;
-      return true;
-    }
-  else
-    return false;
-}
