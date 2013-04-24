@@ -125,8 +125,19 @@ filesys_open (const char *name)
 bool
 filesys_remove (const char *name) 
 {
-  struct dir *dir = dir_open_root ();
-  bool success = dir != NULL && dir_remove (dir, name);
+  //struct dir *dir = dir_open_root ();
+  
+  char *copy = (char *) malloc(strlen(name) + 1); 
+  if (copy == NULL)
+  {
+    PANIC("Malloc failure");
+  }
+
+  strlcpy(copy, name, strlen(name) + 1);
+  char *filename;
+
+  struct dir *dir = path_to_dir (copy, &filename);
+  bool success = dir != NULL && dir_remove (dir, filename);
   dir_close (dir); 
 
   return success;
@@ -157,49 +168,12 @@ path_to_dir (char *path, char **filename)
   else
   {
     cur_dir = dir_reopen(thread_current ()->cur_dir);
-    //cur_dir = dir_open_root ();
   }
 
   ans = cur_dir;
 
   char *token, *save_ptr;
   struct inode *cur_inode;
-
-  /*
-
-  for (token = strtok_r (path, "/", &save_ptr); token != NULL;
-      token = strtok_r (NULL, "/", &save_ptr))
-  {
-      printf("token = %s\n", token);
-      // Verify file exists
-      if (cur_dir == NULL )//|| !dir_lookup(cur_dir, token, &cur_inode))
-      {
-          printf("Token doesn't exist!\n");
-          inode_close(cur_inode);
-          dir_close(cur_dir);
-          dir_close(ans);
-          return NULL;
-      }
-      
-      dir_lookup(cur_dir, token, &cur_inode);
-      
-      *filename = token;
-      dir_close(ans);
-      ans = cur_dir;
-
-      // cur_inode is a file. Either we're on the last token, or failure.
-      if (!inode_is_dir(cur_inode))
-      {
-        cur_dir = NULL;
-      }
-      else
-      {
-        cur_dir = dir_open(cur_inode);
-        inode_close(cur_inode);
-      }
-
-  }
-  */
 
   token = strtok_r (path, "/", &save_ptr);
 
@@ -208,7 +182,6 @@ path_to_dir (char *path, char **filename)
     dir_lookup (cur_dir, token, &cur_inode);
     *filename = token;
     token = strtok_r (NULL, "/", &save_ptr); 
-
 
     // Nothing left to parse, success!
     if (token == NULL)
@@ -220,7 +193,6 @@ path_to_dir (char *path, char **filename)
     // deeper
     if (cur_inode == NULL || !inode_is_dir(cur_inode))
     {
-      //TODO clean up?
       dir_close(cur_dir);
       inode_close(cur_inode);
       return NULL;
@@ -232,7 +204,6 @@ path_to_dir (char *path, char **filename)
     inode_close(cur_inode);
 
   }
- 
 
   return cur_dir;
 }
