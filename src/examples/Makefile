@@ -31,11 +31,11 @@ pwd_SRC = pwd.c
 shell_SRC = shell.c
 
 # Should work in open ended project.
-login_SRC = login.c verify.c cmdline.c
+login_SRC = login.c cmdline.c hash.c verify.c
 getty_SRC = getty.c
 sudo_SRC = sudo.c
 chmod_SRC = chmod.c
-passwd_SRC = passwd.c
+passwd_SRC = passwd.c cmdline.c hash.c
 
 include $(SRCDIR)/Make.config
 include $(SRCDIR)/Makefile.userprog

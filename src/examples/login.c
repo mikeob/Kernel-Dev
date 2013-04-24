@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "verify.h"
 #include "cmdline.h"
+#include "hash.h"
 
 int
 main (void) 
@@ -42,11 +43,50 @@ main (void)
   if (shadow_fd == -1)
 	{
 		create ("etc/shadow", 10000);
-		shadow_fd = open ("etc/shadow"); 
-		write (shadow_fd, "root:root\n", 10);
-		write (shadow_fd, "kevin:kevin\n", 12);
-		write (shadow_fd, "ollie:ollie\n", 12);
-		write (shadow_fd, "mike:mike\n", 10);
+		shadow_fd = open ("etc/shadow");
+		
+		char hashed_passwd [33];
+		char root [5] = "root";
+		char kevin [6] = "kevin";
+		char ollie [6] = "ollie";
+		char mike [5] = "mike";
+		char colon [1] = ":";
+		char new_line [1] = "\n";
+
+		char user_entry [100];
+
+		md5 ((uint8_t *)root, strlen(root), hashed_passwd);
+		strlcpy (user_entry, root, strlen (root) + 1);
+		strlcat (user_entry, colon, strlen (user_entry) + strlen (colon) + 1);
+		strlcat (user_entry, hashed_passwd, strlen (user_entry) + strlen (hashed_passwd) + 1);
+		strlcat (user_entry, new_line, strlen (user_entry) + strlen (new_line) + 1);
+		write (shadow_fd, user_entry, strlen (user_entry) + 1);
+
+		memset (user_entry, 0, 100);
+		md5 ((uint8_t *)kevin, strlen(kevin), hashed_passwd);
+		strlcpy (user_entry, kevin, strlen (kevin) + 1);
+		strlcat (user_entry, colon, strlen (user_entry) + strlen (colon) + 1);
+		strlcat (user_entry, hashed_passwd, strlen (user_entry) + strlen (hashed_passwd) + 1);
+		strlcat (user_entry, new_line, strlen (user_entry) + strlen (new_line) + 1);
+		write (shadow_fd, user_entry, strlen (user_entry) + 1);
+	
+		memset (user_entry, 0, 100);
+		md5 ((uint8_t *)ollie, strlen(ollie), hashed_passwd);
+		strlcpy (user_entry, ollie, strlen (ollie) + 1);
+		strlcat (user_entry, colon, strlen (user_entry) + strlen (colon) + 1);
+		strlcat (user_entry, hashed_passwd, strlen (user_entry) + strlen (hashed_passwd) + 1);
+		strlcat (user_entry, new_line, strlen (user_entry) + strlen (new_line) + 1);
+		write (shadow_fd, user_entry, strlen (user_entry) + 1);
+
+		memset (user_entry, 0, 100);
+		md5 ((uint8_t *)mike, strlen(mike), hashed_passwd);	
+		strlcpy (user_entry, mike, strlen (mike) + 1);
+		strlcat (user_entry, colon, strlen (user_entry) + strlen (colon) + 1);
+		strlcat (user_entry, hashed_passwd, strlen (user_entry) + strlen (hashed_passwd) + 1);
+		strlcat (user_entry, new_line, strlen (user_entry) + strlen (new_line) + 1);
+		write (shadow_fd, user_entry, strlen (user_entry) + 1);
+
+	
 	}
 
   /* Attempt first verification. */
