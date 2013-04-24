@@ -24,6 +24,7 @@ useradd
 userdel
 groupadd
 groupdel
+getty
 *.d
 *.o
 *.a
