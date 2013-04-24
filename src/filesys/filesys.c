@@ -13,6 +13,8 @@
 struct block *fs_device;
 
 static void do_format (void);
+static struct inode *path_to_file (char *path);
+static struct dir *path_to_dir (char *path, char **filename);
 
 /* Initializes the file system module.
    If FORMAT is true, reformats the file system. */
@@ -68,14 +70,29 @@ filesys_create (const char *name, off_t initial_size)
 struct file *
 filesys_open (const char *name)
 {
-  struct dir *dir = dir_open_root ();
-  struct inode *inode = NULL;
 
-  if (dir != NULL)
-    dir_lookup (dir, name, &inode);
-  dir_close (dir);
+  char *copy = (char *) malloc(strlen(name) + 1); 
+  if (copy == NULL)
+  {
+    PANIC("Malloc failure");
+  }
 
-  return file_open (inode);
+  strlcpy(copy, name, strlen(name) + 1);
+
+
+  //struct dir *dir = dir_open_root ();
+  //struct inode *inode = NULL;
+
+  //if (dir != NULL)
+  //  dir_lookup (dir, name, &inode);
+  //dir_close (dir);
+
+  struct inode *inode = path_to_file(copy); 
+  free(copy);
+
+
+
+  return inode != NULL ? file_open (inode) : NULL;
 }
 
 /* Deletes the file named NAME.
@@ -182,11 +199,11 @@ path_to_file (char *path)
  // Else relative path
  else
  {
-    cur_dir = thread_current ()->cur_dir;
+    cur_dir = dir_reopen(thread_current ()->cur_dir);
  }
 
  char *token, *save_ptr;
- struct inode *cur_inode;
+ struct inode *cur_inode = NULL;
 
  for (token = strtok_r(path, "/", &save_ptr); token != NULL;
      token = strtok_r(NULL, "/", &save_ptr))
@@ -211,8 +228,6 @@ path_to_file (char *path)
       cur_dir = dir_open(cur_inode);
       inode_close(cur_inode);
     }
-    
-
  }
 
  return cur_inode;
