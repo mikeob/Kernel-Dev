@@ -49,15 +49,38 @@ filesys_done (void)
 bool
 filesys_create (const char *name, off_t initial_size) 
 {
+
+  // Don't accept empty string
+  if (strlen(name) == 0)
+  {
+    return false;
+  }
+
+  //printf("filesys_create (%p, %u)\n", name, initial_size);
+
+  char *copy = (char *) malloc(strlen(name) + 1); 
+  if (copy == NULL)
+  {
+    PANIC("Malloc failure");
+  }
+
+  strlcpy(copy, name, strlen(name) + 1);
+
+  char *filename;
+
   block_sector_t inode_sector = 0;
-  struct dir *dir = dir_open_root ();
+  //struct dir *dir = dir_open_root ();
+  struct dir *dir = path_to_dir(copy, &filename);
+  
   bool success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
                   && inode_create (inode_sector, initial_size, false)
-                  && dir_add (dir, name, inode_sector));
+                  && dir_add (dir, filename, inode_sector));
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);
   dir_close (dir);
+
+  free(copy);
 
   return success;
 }
@@ -133,7 +156,8 @@ path_to_dir (char *path, char **filename)
   }
   else
   {
-    cur_dir = thread_current ()->cur_dir;
+    cur_dir = dir_reopen(thread_current ()->cur_dir);
+    //cur_dir = dir_open_root ();
   }
 
   ans = cur_dir;
@@ -141,19 +165,24 @@ path_to_dir (char *path, char **filename)
   char *token, *save_ptr;
   struct inode *cur_inode;
 
+  /*
+
   for (token = strtok_r (path, "/", &save_ptr); token != NULL;
       token = strtok_r (NULL, "/", &save_ptr))
   {
+      printf("token = %s\n", token);
       // Verify file exists
-      if (cur_dir == NULL || !dir_lookup(cur_dir, token, &cur_inode))
+      if (cur_dir == NULL )//|| !dir_lookup(cur_dir, token, &cur_inode))
       {
+          printf("Token doesn't exist!\n");
           inode_close(cur_inode);
           dir_close(cur_dir);
           dir_close(ans);
           return NULL;
       }
       
-      /* Maintain reference for our answer */
+      dir_lookup(cur_dir, token, &cur_inode);
+      
       *filename = token;
       dir_close(ans);
       ans = cur_dir;
@@ -170,8 +199,42 @@ path_to_dir (char *path, char **filename)
       }
 
   }
+  */
 
-  return ans;
+  token = strtok_r (path, "/", &save_ptr);
+
+  while (true)
+  {
+    dir_lookup (cur_dir, token, &cur_inode);
+    *filename = token;
+    token = strtok_r (NULL, "/", &save_ptr); 
+
+
+    // Nothing left to parse, success!
+    if (token == NULL)
+    {
+      break;
+    }
+
+    // Failure, because we have more to parse but cannot descent
+    // deeper
+    if (cur_inode == NULL || !inode_is_dir(cur_inode))
+    {
+      //TODO clean up?
+      dir_close(cur_dir);
+      inode_close(cur_inode);
+      return NULL;
+    }
+   
+    // Descend 
+    dir_close(cur_dir);
+    cur_dir = dir_open(cur_inode);
+    inode_close(cur_inode);
+
+  }
+ 
+
+  return cur_dir;
 }
 
 
