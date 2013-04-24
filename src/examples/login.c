@@ -3,15 +3,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include "verify.h"
-
-static void read_line (char line[], size_t, bool password);
-static bool backspace (char **pos, char line[]);
+#include "cmdline.h"
+#include "hash.h"
 
 int
 main (void) 
 {
-	char username [21];
-  char userpasswd [21];
+	char username [20];
+  char userpasswd [20];
   int i;
   bool verified = false;
 	char uid [6];
@@ -44,11 +43,50 @@ main (void)
   if (shadow_fd == -1)
 	{
 		create ("etc/shadow", 10000);
-		shadow_fd = open ("etc/shadow"); 
-		write (shadow_fd, "root:root\n", 10);
-		write (shadow_fd, "kevin:kevin\n", 12);
-		write (shadow_fd, "ollie:ollie\n", 12);
-		write (shadow_fd, "mike:mike\n", 10);
+		shadow_fd = open ("etc/shadow");
+		
+		char hashed_passwd [33];
+		char root [5] = "root";
+		char kevin [6] = "kevin";
+		char ollie [6] = "ollie";
+		char mike [5] = "mike";
+		char colon [1] = ":";
+		char new_line [1] = "\n";
+
+		char user_entry [100];
+
+		md5 ((uint8_t *)root, strlen(root), hashed_passwd);
+		strlcpy (user_entry, root, strlen (root) + 1);
+		strlcat (user_entry, colon, strlen (user_entry) + strlen (colon) + 1);
+		strlcat (user_entry, hashed_passwd, strlen (user_entry) + strlen (hashed_passwd) + 1);
+		strlcat (user_entry, new_line, strlen (user_entry) + strlen (new_line) + 1);
+		write (shadow_fd, user_entry, strlen (user_entry) + 1);
+
+		memset (user_entry, 0, 100);
+		md5 ((uint8_t *)kevin, strlen(kevin), hashed_passwd);
+		strlcpy (user_entry, kevin, strlen (kevin) + 1);
+		strlcat (user_entry, colon, strlen (user_entry) + strlen (colon) + 1);
+		strlcat (user_entry, hashed_passwd, strlen (user_entry) + strlen (hashed_passwd) + 1);
+		strlcat (user_entry, new_line, strlen (user_entry) + strlen (new_line) + 1);
+		write (shadow_fd, user_entry, strlen (user_entry) + 1);
+	
+		memset (user_entry, 0, 100);
+		md5 ((uint8_t *)ollie, strlen(ollie), hashed_passwd);
+		strlcpy (user_entry, ollie, strlen (ollie) + 1);
+		strlcat (user_entry, colon, strlen (user_entry) + strlen (colon) + 1);
+		strlcat (user_entry, hashed_passwd, strlen (user_entry) + strlen (hashed_passwd) + 1);
+		strlcat (user_entry, new_line, strlen (user_entry) + strlen (new_line) + 1);
+		write (shadow_fd, user_entry, strlen (user_entry) + 1);
+
+		memset (user_entry, 0, 100);
+		md5 ((uint8_t *)mike, strlen(mike), hashed_passwd);	
+		strlcpy (user_entry, mike, strlen (mike) + 1);
+		strlcat (user_entry, colon, strlen (user_entry) + strlen (colon) + 1);
+		strlcat (user_entry, hashed_passwd, strlen (user_entry) + strlen (hashed_passwd) + 1);
+		strlcat (user_entry, new_line, strlen (user_entry) + strlen (new_line) + 1);
+		write (shadow_fd, user_entry, strlen (user_entry) + 1);
+
+	
 	}
 
   /* Attempt first verification. */
@@ -86,64 +124,3 @@ main (void)
 	return EXIT_SUCCESS;
 }
 
-/* Reads a line of input from the user into LINE, which has room
-   for SIZE bytes.  Handles backspace and Ctrl+U in the ways
-   expected by Unix users.  On return, LINE will always be
-   null-terminated and will not end in a new-line character. */
-static void
-read_line (char line[], size_t size, bool password) 
-{
-  char *pos = line;
-  for (;;)
-    {
-      char c;
-      read (STDIN_FILENO, &c, 1);
-
-      switch (c) 
-        {
-        case '\r':
-          *pos = '\0';
-          putchar ('\n');
-          return;
-
-        case '\b':
-          backspace (&pos, line);
-          break;
-
-        case ('U' - 'A') + 1:       /* Ctrl+U. */
-          while (backspace (&pos, line))
-            continue;
-          break;
-
-        default:
-          /* Add character to line. */
-          if (pos < line + size - 1) 
-            {
-							if (password)
-								putchar ('*');
-							else
-              	putchar (c);
-              *pos++ = c;
-            }
-          break;
-        }
-    }
-}
-
-/* If *POS is past the beginning of LINE, backs up one character
-   position.  Returns true if successful, false if nothing was
-   done. */
-static bool
-backspace (char **pos, char line[]) 
-{
-  if (*pos > line)
-    {
-      /* Back up cursor, overwrite character, back up
-         again. */
-      printf ("\b \b");
-      (*pos)--;
-      return true;
-    }
-  else
-    return false;
-}

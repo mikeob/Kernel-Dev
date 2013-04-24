@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "verify.h"
+#include "hash.h"
 
 bool
 verify (char *username, char *userpasswd, char *uid, char *gid)
@@ -52,11 +53,12 @@ verify (char *username, char *userpasswd, char *uid, char *gid)
      * a username in shadow, verify the password matches. */
 		else if (!strcmp (username, temp_string))
 		{
-			insert = temp_string;
-			memset (temp_string, 0, 20);
+			char temp_passwd [33];
+			insert = temp_passwd;
+			memset (temp_passwd, 0, 33);
 
 			/* Grab the password in shadow. */
-			for (i = 0; i < 20; i++)
+			for (i = 0; i < 33; i++)
 			{
 				read (fd, &c, 1);
 				if (c == '\n')
@@ -65,9 +67,13 @@ verify (char *username, char *userpasswd, char *uid, char *gid)
 				insert++;
 			}
 
+			/* Hash the entered password to compare. */
+			char hashed_passwd [33];
+			md5 ((uint8_t *)userpasswd, strlen (userpasswd), hashed_passwd);
+
 			/* If the password matches then return true for
        * verification. */
-			if (!strcmp (userpasswd, temp_string)) 
+			if (!strcmp (hashed_passwd, temp_passwd)) 
 			{
 				char user[100];
 				memset(user, 0, 100);
