@@ -39,6 +39,7 @@ enum
 		SYS_GETEUID,								/* Get the effective user id.*/
 		SYS_GETGID,									/* Get the group id */
 		SYS_GETEGID,								/* Get the effective group id */
+		SYS_CHMOD,									/* Change file permissions. */
   };
 
 #endif /* lib/syscall-nr.h */

@@ -348,6 +348,11 @@ syscall_handler (struct intr_frame *f)
 				f->eax = thread_current ()->egid;
 				break;
 			}
+		case SYS_CHMOD:
+			{
+				f->eax = 0;
+				break;
+			}
 		default:
 			break;
 	}

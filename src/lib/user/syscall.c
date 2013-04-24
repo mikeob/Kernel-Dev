@@ -230,3 +230,9 @@ getegid ()
 {
 	return syscall0 (SYS_GETEGID);
 }
+
+int
+chmod (const char *path, int mode)
+{
+	return syscall2 (SYS_CHMOD, path, mode);
+}
