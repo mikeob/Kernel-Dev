@@ -3,6 +3,7 @@
 #include "filesys/inode.h"
 #include "threads/malloc.h"
 #include "filesys/filesys.h"
+#include <stdio.h>
 
 /* An open file. */
 struct file 
@@ -81,10 +82,10 @@ file_is_dir (struct file *file)
 off_t
 file_read (struct file *file, void *buffer, off_t size) 
 {
-	if (!inode_check_permissions (file->inode, FILE_USER, FILE_READ) ||
-		!inode_check_permissions (file->inode, FILE_GROUP, FILE_READ))
-		if (!inode_check_permissions (file->inode, FILE_OTHER, FILE_READ))
-			return -1; // Do not have permissions to read this file.
+	if (!inode_check_permissions (file->inode, FILE_USER, FILE_READ))
+		if (!inode_check_permissions (file->inode, FILE_GROUP, FILE_READ))
+			if (!inode_check_permissions (file->inode, FILE_OTHER, FILE_READ))
+				return -1; // Do not have permissions to read this file.
 
   off_t bytes_read = inode_read_at (file->inode, buffer, size, file->pos);
   file->pos += bytes_read;
@@ -99,6 +100,12 @@ file_read (struct file *file, void *buffer, off_t size)
 off_t
 file_read_at (struct file *file, void *buffer, off_t size, off_t file_ofs) 
 {
+	if (!inode_check_permissions (file->inode, FILE_USER, FILE_READ))
+		if (inode_check_permissions (file->inode, FILE_GROUP, FILE_READ))
+			if (!inode_check_permissions (file->inode, FILE_OTHER, FILE_READ))
+				return -1; // Do not have permissions to read this file.
+
+
   return inode_read_at (file->inode, buffer, size, file_ofs);
 }
 
@@ -112,6 +119,11 @@ file_read_at (struct file *file, void *buffer, off_t size, off_t file_ofs)
 off_t
 file_write (struct file *file, const void *buffer, off_t size) 
 {
+	if (!inode_check_permissions (file->inode, FILE_USER, FILE_WRITE))
+		if (!inode_check_permissions (file->inode, FILE_GROUP, FILE_WRITE))
+			if (!inode_check_permissions (file->inode, FILE_OTHER, FILE_WRITE))
+				return -1; // Do not have permissions to read this file.
+
   off_t bytes_written = inode_write_at (file->inode, buffer, size, file->pos);
   file->pos += bytes_written;
   return bytes_written;
@@ -128,6 +140,11 @@ off_t
 file_write_at (struct file *file, const void *buffer, off_t size,
                off_t file_ofs) 
 {
+	if (!inode_check_permissions (file->inode, FILE_USER, FILE_WRITE))
+		if (!inode_check_permissions (file->inode, FILE_GROUP, FILE_WRITE))
+			if (!inode_check_permissions (file->inode, FILE_OTHER, FILE_WRITE))
+				return -1; // Do not have permissions to read this file.
+
   return inode_write_at (file->inode, buffer, size, file_ofs);
 }
 
