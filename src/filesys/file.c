@@ -66,6 +66,12 @@ file_get_inumber (struct file *file)
   return inode_get_inumber(file->inode);
 }
 
+bool
+file_is_dir (struct file *file)
+{
+  return inode_is_dir(file->inode);
+}
+
 /* Reads SIZE bytes from FILE into BUFFER,
    starting at the file's current position.
    Returns the number of bytes actually read,
