@@ -82,8 +82,7 @@ main (int argc, char *argv[])
 
   if (user_p > 7 || group_p > 7 || others_p > 7)
   {
-    printf("Invalid permission map. Please enter 
-        3 digits between 0-7 inclusive\n");
+    printf("Invalid permission map. Please enter 3 digits between 0-7 inclusive\n");
     return EXIT_FAILURE;
   }
 
