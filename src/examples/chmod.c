@@ -4,7 +4,7 @@
 #include <string.h>
 
 int 
-main (int argc, char *argv[1])
+main (int argc, char *argv[])
 {
 	int mode = -1;
   char * file;
