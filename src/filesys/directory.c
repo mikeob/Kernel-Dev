@@ -168,6 +168,7 @@ dir_lookup (const struct dir *dir, const char *name,
 bool
 dir_add (struct dir *dir, const char *name, block_sector_t inode_sector)
 {
+  //printf("dir_add(%p, %s, %d)\n", dir, name, inode_sector);
   struct dir_entry e;
   off_t ofs;
   bool success = false;

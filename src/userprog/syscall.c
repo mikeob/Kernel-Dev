@@ -13,6 +13,7 @@
 #include "filesys/file.h"
 #include <string.h>
 #include "filesys/file.h"
+#include "filesys/inode.h"
 #include "devices/input.h"
 
 static void syscall_handler (struct intr_frame *);
@@ -199,8 +200,16 @@ syscall_handler (struct intr_frame *f)
         }
         else 
         {
-           struct file *file = (check_fd(fd))->file_ptr;
-           ans = file_write (file, buffer, size);
+           struct file_descriptor *file_d = check_fd(fd);
+           if (file_d->is_dir)
+           {
+             ans = -1;
+           }
+           else 
+           {
+             struct file *file = file_d->file_ptr;
+             ans = file_write (file, buffer, size);
+           }
         }
 				lock_release (&file_lock);
 
@@ -232,39 +241,33 @@ syscall_handler (struct intr_frame *f)
 				close_fd (fd);
 				break;
       }
+      
+      
       /* Changes the current working directory to dir 
        * Returns true on success.*/
     case SYS_CHDIR: // bool chdir (const char *dir)
       {
         const char *dir = *(char **) syscall_read_stack(f, 1);
         check_pointer ((void *) dir);
-
-        /*
-        char *copy = (char *) malloc(strlen(dir) + 1);
-        if (copy == NULL)
-        {
-          PANIC("Malloc failure");
-        }
-        char *filename;
-
+        
         lock_acquire(&file_lock);
-        struct file *file = filesys_open (dir);
+        f->eax = filesys_chdir(dir);
         lock_release(&file_lock);
-        */
-
         break;
-
       }
+
+
       /* Creates the directory dir. Returns true on success.
        * Fails if dir already exists, or any directory name
        * in the path does not exist */
     case SYS_MKDIR: // bool mkdir (const char *dir)
       {
+        //printf("mkdir called!\n");
         const char *dir = *(char **) syscall_read_stack(f, 1);
         check_pointer ((void *) dir);
-
-        //TODO SPLIT PATH
-
+        lock_acquire(&file_lock);
+        f->eax = filesys_mkdir(dir);
+        lock_release(&file_lock);
         break;
       }
       /* Reads a directory from fd. If successful, stores
