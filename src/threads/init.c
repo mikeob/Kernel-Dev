@@ -135,8 +135,10 @@ main (void)
 
   /* Set the current directory to the root */
   thread_current ()->cur_dir = dir_open_root ();
+	filesys_mkdir ("/etc");
 
   printf ("Boot complete.\n");
+
   
   /* Run actions specified on kernel command line. */
   run_actions (argv);

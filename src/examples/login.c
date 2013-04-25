@@ -26,12 +26,6 @@ main (void)
   int passwd_fd = open ("etc/passwd");
 	int shadow_fd = open ("etc/shadow");
 
-	char * dir = "etc";
-	int dir_fd = open (dir);
-
-	if (dir_fd == -1)
-		mkdir (dir);
-
 	/* Create passwd if it does not exist and open it adding
    * root to passwd. */
   if (passwd_fd == -1)
