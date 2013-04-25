@@ -251,7 +251,7 @@ getegid ()
 }
 
 int
-chmod (const char *path, uint8_t user, uint8_t group, uint8_t others)
+chmod (const char *path, int user, int group, int others)
 {
 	return syscall4 (SYS_CHMOD, path, user, group, others);
 }
