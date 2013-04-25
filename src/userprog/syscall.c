@@ -369,9 +369,19 @@ syscall_handler (struct intr_frame *f)
 				f->eax = thread_current ()->egid;
 				break;
 			}
-		case SYS_CHMOD:
+		case SYS_CHMOD: // bool chmod (char *file, uint8_t user, 
+                    //                   uint8_t group, uint8_t others);
 			{
-        //TODO INCOMPLETE
+        const char *file = *(char **) syscall_read_stack(f, 1);
+        check_pointer((void *) file);
+        uint8_t user = *(uint8_t *) syscall_read_stack(f, 2); 
+        uint8_t group = *(uint8_t *) syscall_read_stack(f, 3); 
+        uint8_t others = *(uint8_t *) syscall_read_stack(f, 4); 
+
+        lock_acquire(&file_lock);
+        f->eax = filesys_chmod(file, user, group, others);
+        lock_release(&file_lock);
+
 				f->eax = 0;
 				break;
 			}
@@ -549,6 +559,7 @@ void syscall_exit (int status)
     }
 
   }
+  lock_release(&exiting_lock);
 
   
   /* Mark status, notify parent */
@@ -563,7 +574,6 @@ void syscall_exit (int status)
     free(ex);
   }
 
-  lock_release(&exiting_lock);
 
 	thread_exit ();
 }
