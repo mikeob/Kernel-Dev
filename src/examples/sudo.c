@@ -21,10 +21,10 @@ int main (int argc, char* argv[])
 			return -1;
 		}
 
-	char* passwd_file = "etc/passwd";
-	char* sudoers_file = "etc/sudoers";
-	char* group_file = "etc/group";
-	char* shadow_file = "etc/shadow";
+	char* passwd_file = "/etc/passwd";
+	char* sudoers_file = "/etc/sudoers";
+	char* group_file = "/etc/group";
+	char* shadow_file = "/etc/shadow";
 
 	
 	char c;
@@ -67,7 +67,6 @@ int main (int argc, char* argv[])
 
 			if (read (passwd_fd, &c, 1) == 0 || c == '\0')
 			{
-				printf("didn't find user.. error\n");
 				return -1; // Error if we don't find the user
 			}
 
@@ -172,6 +171,8 @@ int main (int argc, char* argv[])
 
 	// Get password of user
 	char password[20];
+	char un[20];
+	char hashed_pw[33];
 	int attempts = 0;
 	bool isHashed = false;
 	char *pw = NULL;
@@ -179,39 +180,46 @@ int main (int argc, char* argv[])
 
 	if (!strcmp ("x", user_passwd))
 		{
-			printf("hashed password\n");
 			isHashed = true;
 			// Retrieve the hashed password
 			int shadow_fd = open (shadow_file);
 			
-			char shadow_buf[100];
 			char* shptr = "";
-			char* shbuf = "";
 			
 			for (;;)
 				{
-					memset(shadow_buf, 0, MAX_LENGTH);
-					shptr = shadow_buf;
-					for (i = 0; i < MAX_LENGTH; i++)
+					memset(un, 0, 20);
+					shptr = un;
+					for (i = 0; i < 20; i++)
 						{
 							read (shadow_fd, &c, 1);
-							if (c == '\n')
+							if (c == ':')
 								break;
 							memcpy (shptr, &c, 1);
 							shptr++;		
 						}
-					shptr = shadow_buf;
-					printf("%s\n", shptr);
-					bptr = &shbuf;
-					char* shadow_user = strtok_r (shptr, ":", bptr);
-					printf("shadow user: %s\n", shadow_user);
-					if (!strcmp(shadow_user, user))
+					shptr = un;
+
+					// Check to see if the user from shadow matches user
+					if (!strcmp(user, shptr))
 						{
-							pw = strtok_r (NULL, ":", bptr);
+							memset(hashed_pw, 0, 33);
+							shptr = hashed_pw;
+
+							for (i = 0; i < 33; i++)
+								{
+									read (shadow_fd, &c, 1);
+									if (c == '\n')
+										break;
+									memcpy (shptr, &c, 1);
+									shptr++;
+								}
+
+							pw = hashed_pw;
 							break;
 						}
 					while (c != '\n' && c != '\0')
-						read (shadow_fd, &c, 1);
+					read (shadow_fd, &c, 1);
 
 					if (read (shadow_fd, &c, 1) == 0 || c == '\0')
 						break;
@@ -248,13 +256,14 @@ int main (int argc, char* argv[])
 				}
 			else
 				{
+					printf("Sorry, try again.\n");
 					attempts++;
 					continue;
 				}
 		}
 	if (attempts == 3)
 		{
-			printf("[sudo] Exceeded attempts, exiting\n");
+			printf("sudo: 3 incorrect password attempts\n");
 			return -1;
 		}
 
@@ -268,8 +277,6 @@ int main (int argc, char* argv[])
 				length += 1;
 		}
 
-	printf("%d\n", length);
-	
 	// Impose some reasonable cmd limit
 	if (length > MAX_LENGTH)
 		return -1;
