@@ -435,7 +435,9 @@ syscall_handler (struct intr_frame *f)
     case SYS_INUMBER:// int inumber (int fd)
       {
         int fd = *(int *) syscall_read_stack(f, 1); 
-        //TODO
+
+        struct file_descriptor *file_d = check_fd(fd);
+        f->eax = file_get_inumber(file_d->file_ptr);
 
         break;
       }
