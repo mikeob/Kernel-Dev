@@ -83,6 +83,47 @@ filesys_create (const char *name, off_t initial_size)
 }
 
 
+bool
+filesys_chmod (const char *name, uint8_t user, uint8_t group, uint8_t others)
+{
+
+
+  if (strlen(name) == 0)
+  {
+    return false;
+  }
+
+  char *copy = (char *) malloc(strlen(name) + 1); 
+  if (copy == NULL)
+  {
+    PANIC("Malloc failure");
+  }
+
+  strlcpy(copy, name, strlen(name) + 1);
+
+  struct inode *inode;
+  char *filename;
+
+  struct dir *dir = filesys_path_to_dir(copy, &filename);
+
+  if (dir == NULL)
+  {
+    return false;
+  }
+  bool success = false;
+
+  if (dir_lookup(dir, filename, &inode))
+  {
+    inode_chmod(inode, FILE_USER, user);
+    inode_chmod(inode, FILE_GROUP, group);
+    inode_chmod(inode, FILE_OTHER, others);
+    success = true;
+  }
+
+  return success;
+}
+
+
 bool 
 filesys_chdir (const char *name)
 {
@@ -163,12 +204,10 @@ filesys_mkdir (const char *name)
   }
 
   if (verbose) {printf("filename = %s\n", filename);}
- /* 
   bool success = (free_map_allocate (1, &inode_sector)
                   && dir_create(inode_sector, 16)
                   && dir_add(dir, filename, inode_sector));
-                  */
-
+/*
   bool success = true;
 
   if (!free_map_allocate (1, &inode_sector))
@@ -189,7 +228,7 @@ filesys_mkdir (const char *name)
     success = false;
   }
 
-
+*/
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);
 

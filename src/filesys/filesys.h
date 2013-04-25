@@ -8,6 +8,12 @@
 #define FREE_MAP_SECTOR 0       /* Free map file inode sector. */
 #define ROOT_DIR_SECTOR 1       /* Root directory file inode sector. */
 
+
+/* File permission definitions */
+#define FILE_USER 2
+#define FILE_GROUP 4
+#define FILE_OTHER 8
+
 /* Block device that contains the file system. */
 struct block *fs_device;
 
