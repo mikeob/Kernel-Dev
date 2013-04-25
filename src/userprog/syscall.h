@@ -9,6 +9,7 @@ void syscall_exit (int status);
 struct file_descriptor
 {
 	int fd;
+  bool is_dir; // Indicates whether or not this points to a directory
 	struct file * file_ptr;
 	struct list_elem elem;
 };

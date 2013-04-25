@@ -292,6 +292,12 @@ thread_create (const char *name, int priority,
   ex->parent = thread_current()->tid; 
   sema_init(&ex->sema, 0);
 
+  /* Get current directory from parent */
+  if (function != idle)
+  {
+    t->cur_dir = dir_reopen(thread_current ()->cur_dir);
+  }
+
   /* No lock necessary - thread specific list */ 
   list_push_back(&thread_current()->exit_list, &ex->elem);
 

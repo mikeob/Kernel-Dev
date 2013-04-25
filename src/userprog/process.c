@@ -153,6 +153,8 @@ process_exit (void)
 
   /* Re-enable writes to the executable file */
   file_close(cur->file);
+
+  dir_close(cur->cur_dir);
   
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

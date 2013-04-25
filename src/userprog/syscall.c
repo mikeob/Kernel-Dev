@@ -21,12 +21,14 @@ static struct lock file_lock;
 static void check_pointer(void *p);
 static struct file_descriptor* check_fd (int fd);
 static void close_fd (int fd);
+static struct lock exiting_lock;
 
 
 
 void syscall_init (void) 
 {
 	lock_init (&file_lock);	
+  lock_init (&exiting_lock);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -53,7 +55,7 @@ syscall_handler (struct intr_frame *f)
       {
 			  const char *cmd_line = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) cmd_line);
-				
+			
         tid_t tid = process_execute (cmd_line);
 			  f->eax = tid;
 				break;
@@ -73,6 +75,7 @@ syscall_handler (struct intr_frame *f)
       }
 		case SYS_REMOVE: 
       {
+        //TODO Update so it can remove empty directories
         const char *file = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) file);
 			  lock_acquire (&file_lock);
@@ -82,6 +85,7 @@ syscall_handler (struct intr_frame *f)
       }
 		case SYS_OPEN:
       {
+        //TODO Can open directories
 	
         const char *file = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) file);
@@ -99,17 +103,21 @@ syscall_handler (struct intr_frame *f)
 				/* Find the lowest available file descriptor  */
 				struct list_elem *e;
 				int lowest = 1;
-				for (e = list_begin (&thread_current()->fd_list); e != list_end (&thread_current()->fd_list);
-				 		 e = list_next (e))
+				for (e = list_begin (&thread_current()->fd_list); 
+            e != list_end (&thread_current()->fd_list); e = list_next (e))
 					{
-						struct file_descriptor *temp_fd = list_entry (e, struct file_descriptor, elem);
-						if (temp_fd->fd > lowest + 1)
+						struct file_descriptor *temp_fd = list_entry (e, 
+                struct file_descriptor, elem);
+						
+            if (temp_fd->fd > lowest + 1)
 								break;
 						lowest = temp_fd->fd;
 					}
 			
 				/* Set up a new file descriptor struct */
 				struct file_descriptor *new_fd = malloc(sizeof(struct file_descriptor));
+        //new_fd->is_dir = inode_is_dir(file_get_inode(temp_ptr)) 
+        //  ? true : false;
         new_fd->fd = lowest + 1;
 				new_fd->file_ptr = temp_ptr;
 				list_insert(e,  &new_fd->elem);
@@ -162,7 +170,6 @@ syscall_handler (struct intr_frame *f)
 		case SYS_WRITE:
 			{
 				lock_acquire (&file_lock);
-
 				int fd = *(int *) syscall_read_stack(f, 1);
 				void *buffer = *(void **) syscall_read_stack(f, 2);
         check_pointer(buffer);
@@ -190,8 +197,16 @@ syscall_handler (struct intr_frame *f)
         }
         else 
         {
-           struct file *file = (check_fd(fd))->file_ptr;
-           ans = file_write (file, buffer, size);
+           struct file_descriptor *file_d = check_fd(fd);
+           if (file_d->is_dir)
+           {
+             ans = -1;
+           }
+           else 
+           {
+             struct file *file = file_d->file_ptr;
+             ans = file_write (file, buffer, size);
+           }
         }
 				lock_release (&file_lock);
 
@@ -353,6 +368,77 @@ syscall_handler (struct intr_frame *f)
 				f->eax = 0;
 				break;
 			}
+      /* Changes the current working directory to dir 
+       * Returns true on success.*/
+    case SYS_CHDIR: // bool chdir (const char *dir)
+      {
+        const char *dir = *(char **) syscall_read_stack(f, 1);
+        check_pointer ((void *) dir);
+        
+        lock_acquire(&file_lock);
+        f->eax = filesys_chdir(dir);
+        lock_release(&file_lock);
+        break;
+      }
+
+
+      /* Creates the directory dir. Returns true on success.
+       * Fails if dir already exists, or any directory name
+       * in the path does not exist */
+    case SYS_MKDIR: // bool mkdir (const char *dir)
+      {
+        //printf("mkdir called!\n");
+        const char *dir = *(char **) syscall_read_stack(f, 1);
+        check_pointer ((void *) dir);
+        lock_acquire(&file_lock);
+        f->eax = filesys_mkdir(dir);
+        lock_release(&file_lock);
+        break;
+      }
+      /* Reads a directory from fd. If successful, stores
+       * the null terminated file name in name, which must
+       * have room for READDIR_MAX_LEN + 1 bytes, and returns
+       * true. If no entries left in the directory, return false. 
+       *
+       * If directory changes while open, no worries. 
+       *
+       * Do not return "." or ".."
+       *
+       * READDIR_MAX_LEN defined in lib/user/syscall.h. Will
+       * probably have to change this */
+    case SYS_READDIR: // bool readdir (int fd, char *name)
+      {
+        int fd_ = *(int *) syscall_read_stack(f, 1); 
+        const char *name = *(char **) syscall_read_stack(f, 2);
+        check_pointer ((void *) name);
+
+        struct file_descriptor *fd = check_fd(fd_);
+        if (!fd->is_dir)
+        {
+          f->eax = false;
+          break;
+        }
+
+        break;
+      }
+    case SYS_ISDIR: // bool isdir (int fd)
+      {
+        int fd_ = *(int *) syscall_read_stack(f, 1); 
+        struct file_descriptor *fd = check_fd(fd_);
+        f->eax = fd->is_dir;
+
+        break;
+
+      }
+      /* Returns the inodenumber of the inode associated with fd,
+       * which may represent a file or directory */
+    case SYS_INUMBER:// int inumber (int fd)
+      {
+        int fd = *(int *) syscall_read_stack(f, 1); 
+        //TODO
+
+        break;
+      }
 		default:
 			break;
 	}
@@ -362,9 +448,14 @@ static
 void close_fd (int fd) 
 {
 	struct file_descriptor* fd_ = check_fd (fd);
+
+  file_close(fd_->file_ptr);
+  
 	list_remove (&fd_->elem);
 	free(fd_);
 }
+
+
 
 static
 void* syscall_read_stack (struct intr_frame *f, int locale) 
@@ -435,6 +526,7 @@ void syscall_exit (int status)
       free (fd_);
 		}
  
+  lock_acquire(&exiting_lock);
   /* Mark all children as abandoned
    * and reap all un-reaped children*/
   while (!list_empty (&thread_current ()->exit_list))
@@ -442,6 +534,7 @@ void syscall_exit (int status)
     struct exit *ex = list_entry(
         list_pop_front(&thread_current ()->exit_list),
         struct exit, elem);
+
     ex->abandoned = true;
     
     /* If child already exited, reap. */
@@ -452,15 +545,20 @@ void syscall_exit (int status)
 
   }
 
+  
   /* Mark status, notify parent */
   struct exit *ex = thread_current()->exit;
+
   ex->status = status;
   sema_up(&ex->sema);
   
-  if (ex->abandoned)
+  if (ex->abandoned && ex)
   {
+    //printf("Freeing %p\n", ex);
     free(ex);
   }
+
+  lock_release(&exiting_lock);
 
 	thread_exit ();
 }

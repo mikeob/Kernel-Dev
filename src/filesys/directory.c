@@ -5,6 +5,7 @@
 #include "filesys/filesys.h"
 #include "filesys/inode.h"
 #include "threads/malloc.h"
+#include "threads/thread.h"
 
 /* A directory. */
 struct dir 
@@ -26,7 +27,33 @@ struct dir_entry
 bool
 dir_create (block_sector_t sector, size_t entry_cnt)
 {
-  return inode_create (sector, entry_cnt * sizeof (struct dir_entry));
+
+  bool result = inode_create (sector, entry_cnt * sizeof (struct dir_entry), true);
+  
+  struct inode *new_inode = inode_open (sector);
+  if (new_inode == NULL)
+  {
+    PANIC("inode allocation failure");
+  }
+
+  struct dir *new_dir = dir_open(new_inode);
+  if (new_dir == NULL)
+  {
+    PANIC("dir_open failure");
+  }
+
+  // Add '.' and '..' references
+  block_sector_t parent = sector == ROOT_DIR_SECTOR ? sector 
+               : inode_get_inumber(thread_current ()->cur_dir->inode); 
+
+  result = result && dir_add (new_dir, ".", sector);
+  result = result && dir_add (new_dir, "..", parent);
+
+  // Clean up
+  inode_close (new_inode);
+  dir_close (new_dir);
+
+  return result;
 }
 
 /* Opens and returns the directory for the given INODE, of which
@@ -141,6 +168,7 @@ dir_lookup (const struct dir *dir, const char *name,
 bool
 dir_add (struct dir *dir, const char *name, block_sector_t inode_sector)
 {
+  //printf("dir_add(%p, %s, %d)\n", dir, name, inode_sector);
   struct dir_entry e;
   off_t ofs;
   bool success = false;
