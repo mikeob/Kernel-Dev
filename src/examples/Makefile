@@ -33,7 +33,7 @@ shell_SRC = shell.c
 # Should work in open ended project.
 login_SRC = login.c cmdline.c hash.c verify.c
 getty_SRC = getty.c
-sudo_SRC = sudo.c
+sudo_SRC = sudo.c cmdline.c hash.c
 chmod_SRC = chmod.c
 passwd_SRC = passwd.c cmdline.c hash.c
 
