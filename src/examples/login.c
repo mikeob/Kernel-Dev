@@ -120,6 +120,10 @@ main (void)
 	
 		wait (exec ("shell"));
 	}
+  else
+  {
+    return EXIT_FAILURE;
+  }
 	
 	return EXIT_SUCCESS;
 }
