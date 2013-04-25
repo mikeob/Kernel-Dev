@@ -6,19 +6,32 @@
 #include "filesys/filesys.h"
 #include "filesys/free-map.h"
 #include "threads/malloc.h"
+#include "threads/thread.h"
 
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
 
 /* On-disk inode.
+ *
+ * Implemented permissions. We had a lot
+ * of extra space, so we didn't worry about saving space
+ *
+ *
    Must be exactly BLOCK_SECTOR_SIZE bytes long. */
 struct inode_disk
   {
     block_sector_t start;               /* First data sector. */
     off_t length;                       /* File size in bytes. */
     bool is_dir;                        /* Is this a directory? */
+    int user_id;                        /* User id who created the file */
+    int group_id;                       /* Group id who created the file */
+    uint8_t user_permission;            /* User permission mapping */
+    uint8_t group_permission;           /* Group permission mapping */
+    uint8_t other_permission;           /* Other permission mapping */
+    bool set_uid;                       /* Set uid bit */
+    bool set_gid;                       /* Set uid bit */
     unsigned magic;                     /* Magic number. */
-    uint32_t unused[124];               /* Not used. */
+    uint32_t unused[120];               /* Not used. */
   };
 
 /* Returns the number of sectors to allocate for an inode SIZE
@@ -80,6 +93,7 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
 
   /* If this assertion fails, the inode structure is not exactly
      one sector in size, and you should fix that. */
+
   ASSERT (sizeof *disk_inode == BLOCK_SECTOR_SIZE);
 
   disk_inode = calloc (1, sizeof *disk_inode);
@@ -89,6 +103,16 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
       disk_inode->length = length;
       disk_inode->magic = INODE_MAGIC;
       disk_inode->is_dir = is_dir;
+      // Default file permissions will be 640.
+      // TODO Currently uses -effective- id's
+      disk_inode->user_id = thread_current ()->euid;
+      disk_inode->group_id = thread_current ()->egid;
+      disk_inode->user_permission = 6;
+      disk_inode->group_permission = 4;
+      disk_inode->other_permission = 0;
+      disk_inode->set_uid = false;
+      disk_inode->set_gid = false;
+
       if (free_map_allocate (sectors, &disk_inode->start)) 
         {
           block_write (fs_device, sector, disk_inode);
@@ -165,6 +189,72 @@ inode_is_dir (const struct inode *inode)
   return inode->data.is_dir;
 }
 
+/* File permission utilities */
+
+int inode_get_uid (struct inode *inode)
+{
+  return inode->data.user_id; 
+}
+
+int inode_get_gid (struct inode *inode)
+{
+  return inode->data.group_id;
+}
+
+uint8_t inode_get_permissions (struct inode *inode, int group)
+{
+  
+  switch (group)
+  {
+    case FILE_USER:
+      {
+        return inode->data.user_permission;
+      }
+    case FILE_GROUP:
+      {
+        return inode->data.group_permission;
+      }
+    case FILE_OTHER:
+      {
+        return inode->data.other_permission;
+      }
+    default: return 0;
+  }
+
+}
+
+bool
+inode_chmod (struct inode *inode, int group, uint8_t permissions)
+{
+
+  if (permissions > 7)
+  {
+    return false;
+  }
+
+  switch (group)
+  {
+    case FILE_USER:
+      {
+        inode->data.user_permission = permissions;
+        break;
+      }
+    case FILE_GROUP:
+      {
+        inode->data.group_permission = permissions;
+        break;
+      }
+    case FILE_OTHER:
+      {
+        inode->data.other_permission = permissions;
+        break;
+      }
+    default: return false;
+  }
+
+  return true;
+}
+
 /* Closes INODE and writes it to disk.
    If this was the last reference to INODE, frees its memory.
    If INODE was also a removed inode, frees its blocks. */
@@ -189,6 +279,8 @@ inode_close (struct inode *inode)
                             bytes_to_sectors (inode->data.length)); 
         }
 
+      //TODO Write to disk.
+      block_write(fs_device, inode->sector, &inode->data);
       free (inode); 
     }
 }
