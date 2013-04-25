@@ -290,6 +290,6 @@ int main (int argc, char* argv[])
 				strlcat(cmdline, " ", MAX_LENGTH);
 		}
 
-	exec (cmdline);
+	wait (exec (cmdline));
 	return 0;
 }
