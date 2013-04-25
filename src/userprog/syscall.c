@@ -53,6 +53,7 @@ syscall_handler (struct intr_frame *f)
 			}
 		case SYS_EXEC: 
       {
+        //TODO CHECK PERMISSIONS
 			  const char *cmd_line = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) cmd_line);
 			
@@ -62,6 +63,7 @@ syscall_handler (struct intr_frame *f)
       }
     case SYS_CREATE:
       {
+        //TODO SET FILE PERMISSIONS
         const char *file = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) file);
 
@@ -76,6 +78,7 @@ syscall_handler (struct intr_frame *f)
 		case SYS_REMOVE: 
       {
         //TODO Update so it can remove empty directories
+        //TODO CHECK PERMISSIONS
         const char *file = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) file);
 			  lock_acquire (&file_lock);
@@ -85,7 +88,9 @@ syscall_handler (struct intr_frame *f)
       }
 		case SYS_OPEN:
       {
-        //TODO Can open directories
+        //TODO CHECK PERMISSIONS
+        // Can we open a file with no permissions? I suppose we can...
+        // Though, nothing can be done with the file..
 	
         const char *file = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) file);
@@ -116,8 +121,7 @@ syscall_handler (struct intr_frame *f)
 			
 				/* Set up a new file descriptor struct */
 				struct file_descriptor *new_fd = malloc(sizeof(struct file_descriptor));
-        //new_fd->is_dir = inode_is_dir(file_get_inode(temp_ptr)) 
-        //  ? true : false;
+        new_fd->is_dir = file_is_dir(temp_ptr);
         new_fd->fd = lowest + 1;
 				new_fd->file_ptr = temp_ptr;
 				list_insert(e,  &new_fd->elem);
@@ -136,6 +140,7 @@ syscall_handler (struct intr_frame *f)
       }
 		case SYS_READ: 
       {
+        //TODO CHECK FILE PRIVILEGES
         int fd = *(int *) syscall_read_stack(f, 1);
         void* buffer = *(void**)syscall_read_stack(f, 2);
 				check_pointer(buffer);
@@ -169,6 +174,7 @@ syscall_handler (struct intr_frame *f)
       }
 		case SYS_WRITE:
 			{
+        //TODO CHECK FILE PRIVILEGES!
 				lock_acquire (&file_lock);
 				int fd = *(int *) syscall_read_stack(f, 1);
 				void *buffer = *(void **) syscall_read_stack(f, 2);
@@ -365,6 +371,7 @@ syscall_handler (struct intr_frame *f)
 			}
 		case SYS_CHMOD:
 			{
+        //TODO INCOMPLETE
 				f->eax = 0;
 				break;
 			}
@@ -387,7 +394,6 @@ syscall_handler (struct intr_frame *f)
        * in the path does not exist */
     case SYS_MKDIR: // bool mkdir (const char *dir)
       {
-        //printf("mkdir called!\n");
         const char *dir = *(char **) syscall_read_stack(f, 1);
         check_pointer ((void *) dir);
         lock_acquire(&file_lock);
@@ -408,6 +414,7 @@ syscall_handler (struct intr_frame *f)
        * probably have to change this */
     case SYS_READDIR: // bool readdir (int fd, char *name)
       {
+        //TODO INCOMPLETE
         int fd_ = *(int *) syscall_read_stack(f, 1); 
         const char *name = *(char **) syscall_read_stack(f, 2);
         check_pointer ((void *) name);
@@ -426,19 +433,15 @@ syscall_handler (struct intr_frame *f)
         int fd_ = *(int *) syscall_read_stack(f, 1); 
         struct file_descriptor *fd = check_fd(fd_);
         f->eax = fd->is_dir;
-
         break;
-
       }
       /* Returns the inodenumber of the inode associated with fd,
        * which may represent a file or directory */
     case SYS_INUMBER:// int inumber (int fd)
       {
         int fd = *(int *) syscall_read_stack(f, 1); 
-
         struct file_descriptor *file_d = check_fd(fd);
         f->eax = file_get_inumber(file_d->file_ptr);
-
         break;
       }
 		default:
