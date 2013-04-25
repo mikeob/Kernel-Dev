@@ -3,9 +3,20 @@
 #include <syscall.h>
 #include <string.h>
 
+
+/* Chmod program. Passes a permissions integer of the form <xyz>
+ * where 0 <= x, y, z <= 7, followed by a file.
+ *
+ * For example: 
+ *
+ * chmod 740 ./hello_world.py
+ *
+ * */
+
 int 
 main (int argc, char *argv[])
 {
+  /*   PREVIOUS VERSION
 	int mode = -1;
   char * file;
 
@@ -53,6 +64,30 @@ main (int argc, char *argv[])
 		printf ("Invalid file.\n");
 
 	chmod (file, mode);
+  */
 
-	return 0;
+  if (argc != 3)
+  {
+    printf("Invalid number of arguments. Must pass 3 arguments.\n");
+    return EXIT_FAILURE;
+  }
+
+  /* Extract the permission mapping */
+  int mask = atoi(argv[1]);
+  int others_p = mask % 10;
+  mask /= 10;
+  int group_p = mask % 10;
+  mask /= 10;
+  int user_p = mask;
+
+  if (user_p > 7 || group_p > 7 || others_p > 7)
+  {
+    printf("Invalid permission map. Please enter 
+        3 digits between 0-7 inclusive\n");
+    return EXIT_FAILURE;
+  }
+
+  chmod (argv[2], user_p, others_p, group_p);
+
+	return EXIT_SUCCESS;
 }
