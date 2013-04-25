@@ -24,6 +24,7 @@ off_t inode_length (const struct inode *);
 /* File permission utilities */
 int inode_get_uid (struct inode *inode);
 int inode_get_gid (struct inode *inode);
+bool inode_check_permissions (struct inode *inode, int group, int flags);
 uint8_t inode_get_permissions (struct inode *inode, int group);
 bool inode_chmod (struct inode *inode, int group, uint8_t permissions);
 

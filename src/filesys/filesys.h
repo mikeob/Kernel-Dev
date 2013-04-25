@@ -14,6 +14,10 @@
 #define FILE_GROUP 4
 #define FILE_OTHER 8
 
+#define FILE_READ 4
+#define FILE_WRITE 2
+#define FILE_EXEC 1
+
 /* Block device that contains the file system. */
 struct block *fs_device;
 

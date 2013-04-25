@@ -2,6 +2,7 @@
 #include <debug.h>
 #include "filesys/inode.h"
 #include "threads/malloc.h"
+#include "filesys/filesys.h"
 
 /* An open file. */
 struct file 
@@ -80,6 +81,11 @@ file_is_dir (struct file *file)
 off_t
 file_read (struct file *file, void *buffer, off_t size) 
 {
+	if (!inode_check_permissions (file->inode, FILE_USER, FILE_READ) ||
+		!inode_check_permissions (file->inode, FILE_GROUP, FILE_READ))
+		if (!inode_check_permissions (file->inode, FILE_OTHER, FILE_READ))
+			return -1; // Do not have permissions to read this file.
+
   off_t bytes_read = inode_read_at (file->inode, buffer, size, file->pos);
   file->pos += bytes_read;
   return bytes_read;

@@ -201,7 +201,8 @@ int inode_get_gid (struct inode *inode)
   return inode->data.group_id;
 }
 
-uint8_t inode_get_permissions (struct inode *inode, int group)
+uint8_t 
+inode_get_permissions (struct inode *inode, int group)
 {
   
   switch (group)
@@ -217,6 +218,29 @@ uint8_t inode_get_permissions (struct inode *inode, int group)
     case FILE_OTHER:
       {
         return inode->data.other_permission;
+      }
+    default: return 0;
+  }
+
+}
+
+bool 
+inode_check_permissions (struct inode *inode, int group, int flag)
+{
+  
+  switch (group)
+  {
+    case FILE_USER:
+      {
+        return (inode->data.user_permission & flag) == flag; 
+      }
+    case FILE_GROUP:
+      {
+        return (inode->data.group_permission & flag) == flag;
+      }
+    case FILE_OTHER:
+      {
+        return (inode->data.other_permission & flag) == flag;
       }
     default: return 0;
   }

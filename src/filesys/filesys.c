@@ -75,6 +75,8 @@ filesys_create (const char *name, off_t initial_size)
                   && dir_add (dir, filename, inode_sector));
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);
+
+	
   dir_close (dir);
 
   free(copy);
@@ -268,6 +270,7 @@ filesys_open (const char *name)
   
   struct inode *inode;
   dir_lookup(dir, filename, &inode);
+
   free(copy);
   return inode != NULL ? file_open (inode) : NULL;
 }
