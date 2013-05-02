@@ -13,6 +13,7 @@
 #include "filesys/file.h"
 #include <string.h>
 #include "devices/input.h"
+#include "filesys/inode.h"
 
 static void syscall_handler (struct intr_frame *);
 static void* syscall_read_stack (struct intr_frame *f, int locale);
@@ -22,7 +23,7 @@ static void check_pointer(void *p);
 static struct file_descriptor* check_fd (int fd);
 static void close_fd (int fd);
 static struct lock exiting_lock;
-
+static bool inode_check_permissions (struct inode *inode, int group, int flag);
 
 
 void syscall_init (void) 
@@ -162,6 +163,14 @@ syscall_handler (struct intr_frame *f)
 				else
 					{
 						struct file_descriptor *fd_ = check_fd (fd);
+						if (!inode_check_permissions (fd_->file_ptr->inode, FILE_USER, FILE_READ))
+							if (!inode_check_permissions (fd_->file_ptr->inode, FILE_GROUP, FILE_READ))
+								if (!inode_check_permissions (fd_->file_ptr->inode, FILE_OTHER, FILE_READ))
+								{
+									printf ("Read permission denied.\n");
+									f->eax = -1; // Do not have permissions to read this file.
+									break;
+								}
 						f->eax = file_read(fd_->file_ptr, buffer, size);
 					}
 			  break;
@@ -211,6 +220,14 @@ syscall_handler (struct intr_frame *f)
            else 
            {
              struct file *file = file_d->file_ptr;
+							if (!inode_check_permissions (file_d->file_ptr->inode, FILE_USER, FILE_WRITE))
+								if (!inode_check_permissions (file_d->file_ptr->inode, FILE_GROUP, FILE_WRITE))
+									if (!inode_check_permissions (file_d->file_ptr->inode, FILE_OTHER, FILE_WRITE))
+									{
+										printf ("Write permission denied.\n");
+										f->eax = -1; // Do not have permissions to read this file.
+										break;
+									}
              ans = file_write (file, buffer, size);
            }
         }
@@ -576,4 +593,31 @@ void syscall_exit (int status)
 
 
 	thread_exit ();
+}
+
+static bool 
+inode_check_permissions (struct inode *inode, int group, int flag)
+{
+  
+  switch (group)
+  {
+    case FILE_USER:
+      {
+				if (inode->data.user_id != thread_current ()->euid)
+					return 0;
+				return (inode->data.user_permission & flag) == flag;
+      }
+    case FILE_GROUP:
+      {
+				if (inode->data.group_id != thread_current ()->egid)
+					return 0;
+        return (inode->data.group_permission & flag) == flag;
+      }
+    case FILE_OTHER:
+      {
+        return (inode->data.other_permission & flag) == flag;
+      }
+    default: return 0;
+  }
+
 }

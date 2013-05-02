@@ -37,7 +37,8 @@ int main (void)
 			/* Read username. */
 			for (i = 0; i < 20; i++)
 			{
-				read (fd, &c, 1);
+				if (read (fd, &c, 1) == -1)
+					return 0;
 				if (c == ':')
 					break;
    	 		memcpy (insert, &c, 1);
@@ -52,9 +53,10 @@ int main (void)
 			}
 
 			while (c != '\n' && c != '\0')
-				read (fd, &c, 1);
+				if (read (fd, &c, 1) == -1)
+					return 0;
 
-			if (read (fd, &c, 1) == 0 || c == '\0')
+			if (read (fd, &c, 1) <= 0 || c == '\0')
 				break;
 		
 			seek (fd, tell (fd) - 1);
@@ -76,7 +78,8 @@ int main (void)
 		/* Read id. */
 		for (i = 0; i < 5; i++)
 		{
-			read (fd, &c, 1);
+			if (read (fd, &c, 1) == -1)
+				return 0;
 			if (c == ':')
 				break;
 			memcpy (insert, &c, 1);
@@ -114,7 +117,8 @@ int main (void)
 		/* Read username. */
 		for (i = 0; i < 20; i++)
 		{
-			read (fd, &c, 1);
+			if (read (fd, &c, 1) == -1)
+				return 0;
 			if (c == ':')
 				break;
    	 	memcpy (insert, &c, 1);
@@ -131,7 +135,8 @@ int main (void)
 		/* Read id. */
 		for (i = 0; i < 5; i++)
 		{
-			read (fd, &c, 1);
+			if (read (fd, &c, 1) == -1)
+				return 0;
 			total_chars++;
 			if (c == ':')
 				break;
@@ -144,9 +149,10 @@ int main (void)
 			break;
 
 		while (c != '\n' && c != '\0')
-				read (fd, &c, 1);
+				if (read (fd, &c, 1) == -1)
+					return 0;
 
-		if (read (fd, &c, 1) == 0 || c == '\0')
+		if (read (fd, &c, 1) <= 0 || c == '\0')
 			break;
 		
 		seek (fd, tell (fd) - 1);
@@ -155,7 +161,8 @@ int main (void)
 	/* Go back to check for x. */
 	seek (fd, tell(fd) - total_chars - 2);
 
-	read (fd, &c, 1);
+	if (read (fd, &c, 1) == -1)
+		return 0;
 
 	/* Make sure user has password entry in shadow. */
 	if (c == 'x')
@@ -164,7 +171,8 @@ int main (void)
 	{
 		char x [1] = "x";
 		seek (fd, tell (fd) - 1);
-		write (fd, x, 1);
+		if (write (fd, x, 1) == -1)
+			return 0;
 	}
 
 	close (fd);
@@ -186,7 +194,8 @@ int main (void)
     	/* Read username. */
 			for (i = 0; i < 20; i++)
 			{
-				read (fd, &c, 1);
+				if (read (fd, &c, 1) == -1)
+					return 0;
 				if (c == ':')
 					break;
    	 		memcpy (insert, &c, 1);
@@ -198,16 +207,18 @@ int main (void)
 				break;
 	
 			while (c != '\n' && c != '\0')
-					read (fd, &c, 1);
+				if (read (fd, &c, 1) == -1)
+					return 0;
 
-			if (read (fd, &c, 1) == 0 || c == '\0')
+			if (read (fd, &c, 1) <= 0 || c == '\0')
 				break;
 		
 			seek (fd, tell (fd) - 1);
 		}
 
 		/* Write the hashed password. */
-		write (fd, hashed_passwd, 32);
+		if (write (fd, hashed_passwd, 32) == -1)
+			return 0;
 		printf ("Password changed.\n");
 	}
 

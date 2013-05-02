@@ -46,7 +46,8 @@ int main (int argc, char* argv[])
 
 			for (i = 0; i < MAX_LENGTH; i++)
 				{
-					read (passwd_fd, &c, 1);
+					if (read (passwd_fd, &c, 1) == -1)
+						return 0;
 					if (c == '\n')
 						break;
 					memcpy (uptr, &c, 1);
@@ -63,7 +64,8 @@ int main (int argc, char* argv[])
 				break;
 		
 			while (c != '\n' && c != '\0')
-				read (passwd_fd, &c, 1);
+				if (read (passwd_fd, &c, 1) == -1)
+					return 0;
 
 			if (read (passwd_fd, &c, 1) == 0 || c == '\0')
 			{
@@ -84,7 +86,8 @@ int main (int argc, char* argv[])
 
 	for (i = 0; i < MAX_LENGTH; i++)
 		{
-			read (sudoers_fd, &c, 1);
+			if (read (sudoers_fd, &c, 1) == -1)
+				return 0;
 			if (c == '\n')
 				break;
 			memcpy (sptr, &c, 1);
@@ -108,7 +111,8 @@ int main (int argc, char* argv[])
 
 			for (i = 0; i < MAX_LENGTH; i++)
 				{
-					read (group_fd, &c, 1);
+					if (read (group_fd, &c, 1) == -1)
+						return 0;
 					if (c == '\n')
 						break;
 					memcpy (gptr, &c, 1);
@@ -152,7 +156,8 @@ int main (int argc, char* argv[])
 			if (!group_found)
 				{
 					while (c != '\n' && c != '\0')
-						read (group_fd, &c, 1);
+						if (read (group_fd, &c, 1) == -1)
+							return 0;
 
 					if (read (group_fd, &c, 1) == 0 || c == '\0')
 						{
@@ -192,7 +197,8 @@ int main (int argc, char* argv[])
 					shptr = un;
 					for (i = 0; i < 20; i++)
 						{
-							read (shadow_fd, &c, 1);
+							if (read (shadow_fd, &c, 1) == -1)
+								return 0;
 							if (c == ':')
 								break;
 							memcpy (shptr, &c, 1);
@@ -208,7 +214,8 @@ int main (int argc, char* argv[])
 
 							for (i = 0; i < 33; i++)
 								{
-									read (shadow_fd, &c, 1);
+									if (read (shadow_fd, &c, 1) == -1)
+										return 0;
 									if (c == '\n')
 										break;
 									memcpy (shptr, &c, 1);
@@ -219,7 +226,8 @@ int main (int argc, char* argv[])
 							break;
 						}
 					while (c != '\n' && c != '\0')
-					read (shadow_fd, &c, 1);
+						if (read (shadow_fd, &c, 1) == -1)
+							return 0;
 
 					if (read (shadow_fd, &c, 1) == 0 || c == '\0')
 						break;

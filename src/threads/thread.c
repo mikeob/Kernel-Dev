@@ -146,6 +146,8 @@ thread_init (void)
   initial_thread->euid = 0;
 	initial_thread->suid = 0;
 	initial_thread->rgid = 0;
+	initial_thread->egid = 0;
+	initial_thread->sgid = 0;
 }
 /* Starts preemptive thread scheduling by enabling interrupts.
    Also creates the idle thread. */
@@ -261,6 +263,10 @@ thread_create (const char *name, int priority,
   t->ruid = thread_current ()->ruid;
 	t->euid = thread_current ()->euid;
   t->suid = thread_current ()->suid;
+
+	t->rgid = thread_current ()->rgid;
+	t->egid = thread_current ()->egid;
+	t->sgid = thread_current ()->sgid;
 
   /* BSD parameters */
   if (thread_mlfqs)

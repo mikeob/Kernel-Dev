@@ -11,29 +11,6 @@
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
 
-/* On-disk inode.
- *
- * Implemented permissions. We had a lot
- * of extra space, so we didn't worry about saving space
- *
- *
-   Must be exactly BLOCK_SECTOR_SIZE bytes long. */
-struct inode_disk
-  {
-    block_sector_t start;               /* First data sector. */
-    off_t length;                       /* File size in bytes. */
-    bool is_dir;                        /* Is this a directory? */
-    int user_id;                        /* User id who created the file */
-    int group_id;                       /* Group id who created the file */
-    uint8_t user_permission;            /* User permission mapping */
-    uint8_t group_permission;           /* Group permission mapping */
-    uint8_t other_permission;           /* Other permission mapping */
-    bool set_uid;                       /* Set uid bit */
-    bool set_gid;                       /* Set uid bit */
-    unsigned magic;                     /* Magic number. */
-    uint32_t unused[120];               /* Not used. */
-  };
-
 /* Returns the number of sectors to allocate for an inode SIZE
    bytes long. */
 static inline size_t
@@ -41,17 +18,6 @@ bytes_to_sectors (off_t size)
 {
   return DIV_ROUND_UP (size, BLOCK_SECTOR_SIZE);
 }
-
-/* In-memory inode. */
-struct inode 
-  {
-    struct list_elem elem;              /* Element in inode list. */
-    block_sector_t sector;              /* Sector number of disk location. */
-    int open_cnt;                       /* Number of openers. */
-    bool removed;                       /* True if deleted, false otherwise. */
-    int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
-    struct inode_disk data;             /* Inode content. */
-  };
 
 /* Returns the block device sector that contains byte offset POS
    within INODE.
@@ -218,33 +184,6 @@ inode_get_permissions (struct inode *inode, int group)
     case FILE_OTHER:
       {
         return inode->data.other_permission;
-      }
-    default: return 0;
-  }
-
-}
-
-bool 
-inode_check_permissions (struct inode *inode, int group, int flag)
-{
-  
-  switch (group)
-  {
-    case FILE_USER:
-      {
-				if (inode->data.user_id != thread_current ()->euid)
-					return 0;
-				return (inode->data.user_permission & flag) == flag;
-      }
-    case FILE_GROUP:
-      {
-				if (inode->data.group_id != thread_current ()->egid)
-					return 0;
-        return (inode->data.group_permission & flag) == flag;
-      }
-    case FILE_OTHER:
-      {
-        return (inode->data.other_permission & flag) == flag;
       }
     default: return 0;
   }

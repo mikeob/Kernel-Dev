@@ -32,7 +32,8 @@ verify (char *username, char *userpasswd, char *uid, char *gid)
     /* Read username. */
 		for (i = 0; i < 20; i++)
 		{
-			read (fd, &c, 1);
+			if (read (fd, &c, 1) == -1)
+				return 0;
 			if (c == ':')
 				break;
    	 	memcpy (insert, &c, 1);
@@ -43,7 +44,8 @@ verify (char *username, char *userpasswd, char *uid, char *gid)
      * switch to shadow file and find username in it. */
 		if (!strcmp (username, temp_string) && fd == passwd_fd)
 		{
-				read (fd, &c, 1);
+				if (read (fd, &c, 1) == -1)
+					return 0;
 				if (c != 'x')
 					break;
 				fd = shadow_fd;
@@ -60,7 +62,8 @@ verify (char *username, char *userpasswd, char *uid, char *gid)
 			/* Grab the password in shadow. */
 			for (i = 0; i < 33; i++)
 			{
-				read (fd, &c, 1);
+				if (read (fd, &c, 1) == -1)
+					return 0;
 				if (c == '\n')
 					break;
     		memcpy (insert, &c, 1);
@@ -85,7 +88,8 @@ verify (char *username, char *userpasswd, char *uid, char *gid)
 					insert = temp_string;
 					for (i = 0; i < 20; i++)
 						{						
-							read (passwd_fd, &c, 1);
+							if (read (passwd_fd, &c, 1) == -1)
+								return 0;
 							if (c == ':')
 								break;
 							memcpy (insert, &c, 1);
@@ -96,7 +100,8 @@ verify (char *username, char *userpasswd, char *uid, char *gid)
 					else
 						{
 							while (c != '\n' && c != '\0') {
-								read (passwd_fd, &c, 1);
+								if (read (passwd_fd, &c, 1) == -1)
+									return 0;
 							}
 						}
 				}
@@ -104,7 +109,8 @@ verify (char *username, char *userpasswd, char *uid, char *gid)
 				insert = user;
 				for (i = 0; i < 100; i++)
 					{
-						read(passwd_fd, &c, 1);
+						if (read(passwd_fd, &c, 1) == -1)
+							return 0;
 						if (c == '\n')
 							break;
 						memcpy (insert, &c, 1);
@@ -136,9 +142,10 @@ verify (char *username, char *userpasswd, char *uid, char *gid)
 		else
 		{
 			while (c != '\n' && c != '\0')
-				read (fd, &c, 1);
+				if (read (fd, &c, 1) == -1)
+					return 0;
 
-			if (read (fd, &c, 1) == 0 || c == '\0')
+			if (read (fd, &c, 1) <= 0 || c == '\0')
 				break;
 		
 			seek (fd, tell (fd) - 1);
