@@ -69,11 +69,11 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
       disk_inode->length = length;
       disk_inode->magic = INODE_MAGIC;
       disk_inode->is_dir = is_dir;
-      // Default file permissions will be 640.
+      // Default file permissions will be 740.
       // TODO Currently uses -effective- id's
       disk_inode->user_id = thread_current ()->euid;
       disk_inode->group_id = thread_current ()->egid;
-      disk_inode->user_permission = 6;
+      disk_inode->user_permission = 7;
       disk_inode->group_permission = 4;
       disk_inode->other_permission = 0;
       disk_inode->set_uid = false;
@@ -201,6 +201,11 @@ inode_chmod (struct inode *inode, int group, uint8_t permissions)
 
   switch (group)
   {
+		case FILE_SETUID:
+			{
+				inode->data.set_uid = true;
+				break;
+			}
     case FILE_USER:
       {
         inode->data.user_permission = permissions;

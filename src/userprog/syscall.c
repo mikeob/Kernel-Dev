@@ -55,10 +55,41 @@ syscall_handler (struct intr_frame *f)
 		case SYS_EXEC: 
       {
         //TODO CHECK PERMISSIONS
-			  const char *cmd_line = *(char **) syscall_read_stack(f, 1);
+			  char *cmd_line = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) cmd_line);
-			
+
+				char *filename;
+				char *p = NULL;
+				char **ptr = &p;
+				char cmd_line_cpy [100];
+
+				memcpy (cmd_line_cpy, cmd_line, 100);
+
+				filename = strtok_r(cmd_line_cpy, " ", ptr);
+				struct file * file = filesys_open(filename);
+		    bool setuid = false;
+	
+				if (file->inode->data.set_uid)
+				{
+					thread_current()->euid = file->inode->data.user_id;
+					setuid = true;
+				}
+	
+				if (!inode_check_permissions (file->inode, FILE_USER, FILE_EXEC))
+					if (!inode_check_permissions (file->inode, FILE_GROUP, FILE_EXEC))
+						if (!inode_check_permissions (file->inode, FILE_OTHER, FILE_EXEC))
+						{
+							printf ("Execute permission denied.\n");
+							f->eax = -1; // Do not have permissions to read this file.
+							break;
+						}
+
+				file_close (file);
         tid_t tid = process_execute (cmd_line);
+		
+				if (setuid)
+					thread_current()->euid = thread_current()->ruid;
+
 			  f->eax = tid;
 				break;
       }
@@ -396,7 +427,7 @@ syscall_handler (struct intr_frame *f)
         uint8_t others = *(uint8_t *) syscall_read_stack(f, 4); 
 
         lock_acquire(&file_lock);
-        f->eax = filesys_chmod(file, user, group, others);
+        f->eax = filesys_chmod(file, false, user, group, others);
         lock_release(&file_lock);
 
 				f->eax = 0;

@@ -18,6 +18,7 @@ int main (int argc, char* argv[])
 	if (argc == 1)
 		{
 			// Only passed sudo, do nothing
+			printf ("No program entered.\n");
 			return -1;
 		}
 
@@ -69,6 +70,7 @@ int main (int argc, char* argv[])
 
 			if (read (passwd_fd, &c, 1) == 0 || c == '\0')
 			{
+				printf ("User not found.\n");
 				return -1; // Error if we don't find the user
 			}
 
@@ -161,7 +163,7 @@ int main (int argc, char* argv[])
 
 					if (read (group_fd, &c, 1) == 0 || c == '\0')
 						{
-							printf("[sudo] requires privileges\n");
+							printf("[Sudo] requires privileges\n");
 							return -1;
 						}
 				
@@ -242,11 +244,14 @@ int main (int argc, char* argv[])
 			pw = user_passwd;
 		}
 	if (pw == NULL)
-		return -1;
+		{
+			printf ("Password not found.\n");
+			return -1;
+		}
 
 	while (attempts < 3)
 		{
-			printf("[sudo] password for %s: ", user);
+			printf("[Sudo] password for %s: ", user);
 			read_line (password, sizeof password, true);
 			
 			if (isHashed)
@@ -264,14 +269,14 @@ int main (int argc, char* argv[])
 				}
 			else
 				{
-					printf("Sorry, try again.\n");
+					printf("Incorrect password. Please try again.\n");
 					attempts++;
 					continue;
 				}
 		}
 	if (attempts == 3)
 		{
-			printf("sudo: 3 incorrect password attempts\n");
+			printf("Sudo: 3 incorrect password attempts\n");
 			return -1;
 		}
 

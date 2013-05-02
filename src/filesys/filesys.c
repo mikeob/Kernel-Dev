@@ -50,7 +50,7 @@ bool
 filesys_create (const char *name, off_t initial_size) 
 {
 
-  // Don't accept empty string
+	// Don't accept empty string
   if (strlen(name) == 0)
   {
     return false;
@@ -81,12 +81,20 @@ filesys_create (const char *name, off_t initial_size)
 
   free(copy);
 
+	char * shell = "shell";
+	char * sudo = "sudo";
+
+	if (!strcmp (name, shell))
+		filesys_chmod (name, false, 7, 4, 1);
+
+	if (!strcmp (name, sudo))
+		filesys_chmod (name, true, 7, 4, 0);	 
+
   return success;
 }
 
-
 bool
-filesys_chmod (const char *name, uint8_t user, uint8_t group, uint8_t others)
+filesys_chmod (const char *name, bool setuid, uint8_t user, uint8_t group, uint8_t others)
 {
 
 
@@ -116,6 +124,8 @@ filesys_chmod (const char *name, uint8_t user, uint8_t group, uint8_t others)
 
   if (dir_lookup(dir, filename, &inode))
   {
+		if (setuid)
+			inode_chmod(inode, FILE_SETUID, 0);
     inode_chmod(inode, FILE_USER, user);
     inode_chmod(inode, FILE_GROUP, group);
     inode_chmod(inode, FILE_OTHER, others);

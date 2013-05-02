@@ -13,6 +13,7 @@
 #define FILE_USER 2
 #define FILE_GROUP 4
 #define FILE_OTHER 8
+#define FILE_SETUID 16
 
 #define FILE_READ 4
 #define FILE_WRITE 2
@@ -29,6 +30,7 @@ bool filesys_chdir (const char *name);
 struct file *filesys_open (const char *name);
 bool filesys_remove (const char *name);
 struct dir *filesys_path_to_dir(char *path, char **filename);
+bool filesys_chmod (const char *name, bool setuid, uint8_t user, uint8_t group, uint8_t others);
 
 
 #endif /* filesys/filesys.h */
