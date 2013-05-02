@@ -55,6 +55,6 @@ int getuid (void);
 int geteuid (void);
 int getgid (void);
 int getegid (void);
-int chmod (const char *path, int, int, int);
+int chmod (const char *path, int);
 
 #endif /* lib/user/syscall.h */

@@ -417,19 +417,24 @@ syscall_handler (struct intr_frame *f)
 				f->eax = thread_current ()->egid;
 				break;
 			}
-		case SYS_CHMOD: // bool chmod (char *file, uint8_t user, 
-                    //                   uint8_t group, uint8_t others);
+		case SYS_CHMOD: // bool chmod (char *file, int permissions)
 			{
         const char *file = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) file);
-        uint8_t user = *(uint8_t *) syscall_read_stack(f, 2); 
-        uint8_t group = *(uint8_t *) syscall_read_stack(f, 3); 
-        uint8_t others = *(uint8_t *) syscall_read_stack(f, 4); 
+        int permissions = *(int *) syscall_read_stack(f, 2); 
+
+        int user = permissions % 10;
+        permissions /= 10;
+        int group = permissions % 10;
+        permissions /= 10;
+        int others = permissions % 10;
+
 
         lock_acquire(&file_lock);
         f->eax = filesys_chmod(file, false, user, group, others);
         lock_release(&file_lock);
 
+        // Should it always return 0?
 				f->eax = 0;
 				break;
 			}
