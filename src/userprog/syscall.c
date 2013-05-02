@@ -86,9 +86,9 @@ syscall_handler (struct intr_frame *f)
 
 				if (file->inode->data.set_gid)
 				{
-						old_egid = thread_current()->egid;
-						thread_current()->egid = file->inode->data.group_id;
-						setgid = true;
+					old_egid = thread_current()->egid;
+					thread_current()->egid = file->inode->data.group_id;
+					setgid = true;
 				}
 	
 				if (!inode_check_permissions (file->inode, FILE_USER, FILE_EXEC))
@@ -685,14 +685,19 @@ inode_check_permissions (struct inode *inode, int group, int flag)
   {
     case FILE_USER:
       {
+				if (thread_current ()->ruid == 0)
+					return 1;
+
 				if (inode->data.user_id != thread_current ()->euid)
 					return 0;
+
 				return (inode->data.user_permission & flag) == flag;
       }
     case FILE_GROUP:
       {
 				if (inode->data.group_id != thread_current ()->egid)
 					return 0;
+
         return (inode->data.group_permission & flag) == flag;
       }
     case FILE_OTHER:
