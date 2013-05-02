@@ -83,12 +83,20 @@ filesys_create (const char *name, off_t initial_size)
 
 	char * shell = "shell";
 	char * sudo = "sudo";
+	char * chmod = "chmod";
+  char * echo = "echo";
 
 	if (!strcmp (name, shell))
 		filesys_chmod (name, false, false, 7, 4, 1);
 
 	if (!strcmp (name, sudo))
 		filesys_chmod (name, true, false, 7, 4, 0);	 
+
+	if (!strcmp (name, chmod))
+		filesys_chmod (name, false, false, 7, 4, 1);
+
+	if (!strcmp (name, echo))
+		filesys_chmod (name, false, false, 7, 4, 1);
 
   return success;
 }
