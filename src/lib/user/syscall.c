@@ -61,24 +61,6 @@
           retval;                                               \
         })
 
-/* Invokes syscall NUMBER, passing arguments ARG0, ARG1, and
-   ARG2, and returns the return value as an `int'. */
-#define syscall4(NUMBER, ARG0, ARG1, ARG2, ARG3)                \
-        ({                                                      \
-          int retval;                                           \
-          asm volatile                                          \
-            ("pushl %[arg3]; "                                  \
-             "pushl %[arg2]; pushl %[arg1]; pushl %[arg0]; "    \
-             "pushl %[number]; int $0x30; addl $16, %%esp"      \
-               : "=a" (retval)                                  \
-               : [number] "i" (NUMBER),                         \
-                 [arg0] "r" (ARG0),                             \
-                 [arg1] "r" (ARG1),                             \
-                 [arg2] "r" (ARG2),                              \
-                 [arg3] "r" (ARG3)                              \
-               : "memory");                                     \
-          retval;                                               \
-        })
 
 void
 halt (void) 
@@ -251,7 +233,7 @@ getegid ()
 }
 
 int
-chmod (const char *path, int user, int group, int others)
+chmod (const char *path, int permission_map)
 {
-	return syscall4 (SYS_CHMOD, path, user, group, others);
+	return syscall1 (SYS_CHMOD, permission_map);
 }

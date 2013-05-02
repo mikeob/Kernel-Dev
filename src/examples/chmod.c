@@ -66,6 +66,14 @@ main (int argc, char *argv[])
 	chmod (file, mode);
   */
 
+  //TODO Implement suid bit access through chmod
+  //
+  //
+
+
+
+
+
   if (argc != 3)
   {
     printf("Invalid number of arguments. Must pass 3 arguments.\n");
@@ -86,7 +94,7 @@ main (int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  chmod (argv[2], user_p, others_p, group_p);
+  chmod (argv[2], atoi(argv[1]));
 
 	return EXIT_SUCCESS;
 }
