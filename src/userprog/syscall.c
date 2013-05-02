@@ -87,7 +87,7 @@ syscall_handler (struct intr_frame *f)
 					if (!inode_check_permissions (file->inode, FILE_GROUP, FILE_EXEC))
 						if (!inode_check_permissions (file->inode, FILE_OTHER, FILE_EXEC))
 						{
-							printf ("Execute permission denied.\n");
+							//printf ("Execute permission denied.\n");
 							f->eax = -1; // Do not have permissions to read this file.
 							break;
 						}
@@ -206,7 +206,7 @@ syscall_handler (struct intr_frame *f)
 							if (!inode_check_permissions (fd_->file_ptr->inode, FILE_GROUP, FILE_READ))
 								if (!inode_check_permissions (fd_->file_ptr->inode, FILE_OTHER, FILE_READ))
 								{
-									printf ("Read permission denied.\n");
+									//printf ("Read permission denied.\n");
 									f->eax = -1; // Do not have permissions to read this file.
 									break;
 								}
@@ -263,7 +263,7 @@ syscall_handler (struct intr_frame *f)
 								if (!inode_check_permissions (file_d->file_ptr->inode, FILE_GROUP, FILE_WRITE))
 									if (!inode_check_permissions (file_d->file_ptr->inode, FILE_OTHER, FILE_WRITE))
 									{
-										printf ("Write permission denied.\n");
+										//printf ("Write permission denied.\n");
 										f->eax = -1; // Do not have permissions to read this file.
 										break;
 									}
