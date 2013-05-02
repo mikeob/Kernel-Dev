@@ -101,7 +101,7 @@ off_t
 file_read_at (struct file *file, void *buffer, off_t size, off_t file_ofs) 
 {
 	if (!inode_check_permissions (file->inode, FILE_USER, FILE_READ))
-		if (inode_check_permissions (file->inode, FILE_GROUP, FILE_READ))
+		if (!inode_check_permissions (file->inode, FILE_GROUP, FILE_READ))
 			if (!inode_check_permissions (file->inode, FILE_OTHER, FILE_READ))
 				return -1; // Do not have permissions to read this file.
 

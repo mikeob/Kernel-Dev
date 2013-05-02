@@ -232,13 +232,15 @@ inode_check_permissions (struct inode *inode, int group, int flag)
   {
     case FILE_USER:
       {
-				return (inode->data.user_id == thread_current ()->euid) ?
-         	(inode->data.user_permission & flag) == flag : 0;
+				if (inode->data.user_id != thread_current ()->euid)
+					return 0;
+				return (inode->data.user_permission & flag) == flag;
       }
     case FILE_GROUP:
       {
-        return (inode->data.group_id == thread_current ()->egid) ?
-					(inode->data.group_permission & flag) == flag : 0;
+				if (inode->data.group_id != thread_current ()->egid)
+					return 0;
+        return (inode->data.group_permission & flag) == flag;
       }
     case FILE_OTHER:
       {
