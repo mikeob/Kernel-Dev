@@ -67,10 +67,18 @@ syscall_handler (struct intr_frame *f)
 
 				filename = strtok_r(cmd_line_cpy, " ", ptr);
 				struct file * file = filesys_open(filename);
+				if (file == NULL)
+				{
+					f->eax = -1;
+					break;
+				}	
+
 		    bool setuid = false;
-	
+				int old_euid = -1;
+
 				if (file->inode->data.set_uid)
 				{
+					old_euid = thread_current()->euid;
 					thread_current()->euid = file->inode->data.user_id;
 					setuid = true;
 				}
@@ -87,8 +95,8 @@ syscall_handler (struct intr_frame *f)
 				file_close (file);
         tid_t tid = process_execute (cmd_line);
 		
-				if (setuid)
-					thread_current()->euid = thread_current()->ruid;
+				if (setuid && old_euid != -1)
+					thread_current()->euid = old_euid;
 
 			  f->eax = tid;
 				break;
