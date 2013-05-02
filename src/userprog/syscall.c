@@ -54,7 +54,6 @@ syscall_handler (struct intr_frame *f)
 			}
 		case SYS_EXEC: 
       {
-        //TODO CHECK PERMISSIONS
 			  char *cmd_line = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) cmd_line);
 
@@ -74,7 +73,9 @@ syscall_handler (struct intr_frame *f)
 				}	
 
 		    bool setuid = false;
+				bool setgid = false;
 				int old_euid = -1;
+				int old_egid = -1;
 
 				if (file->inode->data.set_uid)
 				{
@@ -82,13 +83,20 @@ syscall_handler (struct intr_frame *f)
 					thread_current()->euid = file->inode->data.user_id;
 					setuid = true;
 				}
+
+				if (file->inode->data.set_gid)
+				{
+						old_egid = thread_current()->egid;
+						thread_current()->egid = file->inode->data.group_id;
+						setgid = true;
+				}
 	
 				if (!inode_check_permissions (file->inode, FILE_USER, FILE_EXEC))
 					if (!inode_check_permissions (file->inode, FILE_GROUP, FILE_EXEC))
 						if (!inode_check_permissions (file->inode, FILE_OTHER, FILE_EXEC))
 						{
 							//printf ("Execute permission denied.\n");
-							f->eax = -1; // Do not have permissions to read this file.
+							f->eax = -1; // Do not have permissions to execute this file.
 							break;
 						}
 
@@ -98,12 +106,14 @@ syscall_handler (struct intr_frame *f)
 				if (setuid && old_euid != -1)
 					thread_current()->euid = old_euid;
 
+				if (setgid && old_egid != -1)
+					thread_current()->egid = old_egid;
+
 			  f->eax = tid;
 				break;
       }
     case SYS_CREATE:
       {
-        //TODO SET FILE PERMISSIONS
         const char *file = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) file);
 
@@ -180,7 +190,6 @@ syscall_handler (struct intr_frame *f)
       }
 		case SYS_READ: 
       {
-        //TODO CHECK FILE PRIVILEGES
         int fd = *(int *) syscall_read_stack(f, 1);
         void* buffer = *(void**)syscall_read_stack(f, 2);
 				check_pointer(buffer);
@@ -222,7 +231,6 @@ syscall_handler (struct intr_frame *f)
       }
 		case SYS_WRITE:
 			{
-        //TODO CHECK FILE PRIVILEGES!
 				lock_acquire (&file_lock);
 				int fd = *(int *) syscall_read_stack(f, 1);
 				void *buffer = *(void **) syscall_read_stack(f, 2);
@@ -264,7 +272,7 @@ syscall_handler (struct intr_frame *f)
 									if (!inode_check_permissions (file_d->file_ptr->inode, FILE_OTHER, FILE_WRITE))
 									{
 										//printf ("Write permission denied.\n");
-										f->eax = -1; // Do not have permissions to read this file.
+										f->eax = -1; // Do not have permissions to write this file.
 										break;
 									}
              ans = file_write (file, buffer, size);
@@ -430,20 +438,50 @@ syscall_handler (struct intr_frame *f)
         const char *file = *(char **) syscall_read_stack(f, 1);
         check_pointer((void *) file);
         int permissions = *(int *) syscall_read_stack(f, 2); 
+				int temp_perm = permissions;
 
-        int user = permissions % 10;
-        permissions /= 10;
-        int group = permissions % 10;
-        permissions /= 10;
-        int others = permissions % 10;
+				struct file * file_open = filesys_open(file);
+				if (file_open == NULL)
+				{
+					f->eax = -1;
+					break;
+				}
 
+				if (file_open->inode->data.user_id != thread_current()->euid)
+				{
+					printf ("Access Denied.\n");
+					f->eax = -1;
+					file_close (file_open);
+					break;
+				}
 
+				file_close (file_open);
+
+        int others = temp_perm % 10;
+        temp_perm /= 10;
+        int group = temp_perm % 10;
+        temp_perm /= 10;
+        int user = temp_perm % 10;
+				int setuid = -1;
+				bool setuid_bool = false;
+        bool setgid_bool = false;
+
+				if (permissions > 777)
+				{
+					temp_perm /=10;
+					setuid = temp_perm % 10;
+				}
+
+				if ((setuid & 4) == 4 && setuid != -1)
+					setuid_bool = true;
+
+				if ((setuid & 2) == 2 && setuid != -1)
+					setgid_bool = true;
+
+	
         lock_acquire(&file_lock);
-        f->eax = filesys_chmod(file, false, user, group, others);
+        f->eax = filesys_chmod(file, setuid_bool, setgid_bool, user, group, others);
         lock_release(&file_lock);
-
-        // Should it always return 0?
-				f->eax = 0;
 				break;
 			}
       /* Changes the current working directory to dir 

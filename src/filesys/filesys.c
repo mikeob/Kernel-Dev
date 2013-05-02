@@ -85,16 +85,16 @@ filesys_create (const char *name, off_t initial_size)
 	char * sudo = "sudo";
 
 	if (!strcmp (name, shell))
-		filesys_chmod (name, false, 7, 4, 1);
+		filesys_chmod (name, false, false, 7, 4, 1);
 
 	if (!strcmp (name, sudo))
-		filesys_chmod (name, true, 7, 4, 0);	 
+		filesys_chmod (name, true, false, 7, 4, 0);	 
 
   return success;
 }
 
 bool
-filesys_chmod (const char *name, bool setuid, uint8_t user, uint8_t group, uint8_t others)
+filesys_chmod (const char *name, bool setuid, bool setgid, uint8_t user, uint8_t group, uint8_t others)
 {
 
 
@@ -126,6 +126,8 @@ filesys_chmod (const char *name, bool setuid, uint8_t user, uint8_t group, uint8
   {
 		if (setuid)
 			inode_chmod(inode, FILE_SETUID, 0);
+		if (setgid)
+			inode_chmod(inode, FILE_SETGID, 0);
     inode_chmod(inode, FILE_USER, user);
     inode_chmod(inode, FILE_GROUP, group);
     inode_chmod(inode, FILE_OTHER, others);

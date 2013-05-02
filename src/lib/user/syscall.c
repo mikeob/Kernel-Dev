@@ -235,5 +235,5 @@ getegid ()
 int
 chmod (const char *path, int permission_map)
 {
-	return syscall1 (SYS_CHMOD, permission_map);
+	return syscall2 (SYS_CHMOD, path, permission_map);
 }

@@ -87,12 +87,23 @@ main (int argc, char *argv[])
   int group_p = mask % 10;
   mask /= 10;
   int user_p = mask;
+	int setuid_p = -1;
 
-  if (user_p > 7 || group_p > 7 || others_p > 7)
+	if (atoi(argv[1]) > 777)
+	{
+		user_p = mask % 10;
+		mask /= 10;
+		setuid_p = mask;
+	}
+
+  if (user_p > 7 || group_p > 7 || others_p > 7 || setuid_p % 2 == 1 || atoi(argv[1]) > 7777)
   {
-    printf("Invalid permission map. Please enter 3 digits between 0-7 inclusive\n");
+    printf("Invalid permission map.\n");
     return EXIT_FAILURE;
   }
+
+	//char file [100] = "";
+	//strlcpy (file, argv[2], 100);
 
   chmod (argv[2], atoi(argv[1]));
 

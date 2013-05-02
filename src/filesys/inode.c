@@ -206,6 +206,11 @@ inode_chmod (struct inode *inode, int group, uint8_t permissions)
 				inode->data.set_uid = true;
 				break;
 			}
+		case FILE_SETGID:
+			{
+				inode->data.set_gid = true;
+				break;
+			}
     case FILE_USER:
       {
         inode->data.user_permission = permissions;
