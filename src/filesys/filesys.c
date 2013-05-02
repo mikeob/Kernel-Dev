@@ -341,6 +341,7 @@ filesys_path_to_dir (char *path, char **filename)
  * The caller is expected to close the provided inode.
  *
  * */
+/*
 static struct inode *
 path_to_inode (char *path)
 {
@@ -389,6 +390,7 @@ path_to_inode (char *path)
 
  return cur_inode;
 }
+*/
 
 
 
