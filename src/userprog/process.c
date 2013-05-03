@@ -376,6 +376,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* Stack location. */
 	char *stack_address = PHYS_BASE;
 
+
+  //TODO 1. Check for stack overflow
+  //     2. Break into a function
+  //     3. Possibly check for malloc failure?
+
 	/* Addresses of command line arguments. */
 	char *addresses[100];
 
