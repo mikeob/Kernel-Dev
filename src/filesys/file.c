@@ -140,6 +140,15 @@ file_allow_write (struct file *file)
     }
 }
 
+/* Returns the inumber associated with the underlying inode */
+int
+file_inumber (struct file *file)
+{
+
+  return inode_get_inumber(file->inode);
+
+}
+
 /* Returns the size of FILE in bytes. */
 off_t
 file_length (struct file *file) 
