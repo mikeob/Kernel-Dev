@@ -3,6 +3,7 @@
 #include <debug.h>
 #include <round.h>
 #include <string.h>
+#include <stdio.h>
 #include "filesys/filesys.h"
 #include "filesys/free-map.h"
 #include "threads/malloc.h"
@@ -152,6 +153,13 @@ inode_reopen (struct inode *inode)
   return inode;
 }
 
+/* Returns the number of open instances of the inode exist */
+int
+inode_open_count (struct inode *inode)
+{
+  return inode->open_cnt;
+}
+
 /* Returns INODE's inode number. */
 block_sector_t
 inode_get_inumber (const struct inode *inode)
@@ -171,15 +179,19 @@ inode_is_dir (const struct inode *inode)
 void
 inode_close (struct inode *inode) 
 {
+  
   /* Ignore null pointer. */
   if (inode == NULL)
     return;
+
 
   /* Release resources if this was the last opener. */
   if (--inode->open_cnt == 0)
     {
       /* Remove from inode list and release lock. */
       list_remove (&inode->elem);
+
+      //TODO Doesn't actually write inode to disk!
  
       /* Deallocate blocks if removed. */
       if (inode->removed) 

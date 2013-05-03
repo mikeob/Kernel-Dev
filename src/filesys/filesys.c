@@ -82,7 +82,12 @@ filesys_create (const char *name, off_t initial_size)
   return success;
 }
 
-
+/* Given an absolute or relative path,
+ * changes the current directory to the 
+ * corresponding directory.
+ *
+ * Fails upon empty path, non-existant directory,
+ * or directory is just a file */
 bool 
 filesys_chdir (const char *name)
 {
@@ -114,8 +119,11 @@ filesys_chdir (const char *name)
   {
     dir_close(thread_current()->cur_dir);
     thread_current ()->cur_dir = dir_open(inode);
+    dir_close (dir);
     return true;
   }
+
+  dir_close (dir);
 
   return false;
 }
@@ -123,12 +131,8 @@ filesys_chdir (const char *name)
 bool
 filesys_mkdir (const char *name)
 {
-  if (verbose) {printf("filesys_mkdir(%s)\n", name);}
   if (strlen(name) == 0)
   {
-
-    if (verbose) {printf("Failing mkdir, non-existant path\n");}
-
     return false;
   }
 
@@ -149,45 +153,20 @@ filesys_mkdir (const char *name)
 
   if (dir == NULL)
   {
-    if (verbose) { printf("filesys_path_to_dir failed\n"); }
     return false;
   }
 
   // If something already exists with that name
   if (dir_lookup(dir, filename, &inode))
   {
-    if (verbose) { printf("File/directory already exists\n"); }
     dir_close(dir);
     inode_close(inode);
     return false;
   }
 
-  if (verbose) {printf("filename = %s\n", filename);}
- /* 
   bool success = (free_map_allocate (1, &inode_sector)
                   && dir_create(inode_sector, 16)
                   && dir_add(dir, filename, inode_sector));
-                  */
-
-  bool success = true;
-
-  if (!free_map_allocate (1, &inode_sector))
-  {
-    printf("free_map_allocate fail\n");
-     success = false;
-  }
-  if (!dir_add(dir, filename, inode_sector))
-  {
-    printf("dir_add fail!\n");
-    success = false;
-  }
-
-  //printf("free sector is %d\n", inode_sector);
-  if (!dir_create(inode_sector, 16))
-  {
-    printf("dir_create fail\n");
-    success = false;
-  }
 
 
   if (!success && inode_sector != 0) 
@@ -195,8 +174,6 @@ filesys_mkdir (const char *name)
 
   dir_close (dir);
   free(copy);
-
-  if (verbose && success) {printf("mkdir success!\n");}
 
   return success;
 
@@ -229,17 +206,20 @@ filesys_open (const char *name)
   
   struct inode *inode;
   dir_lookup(dir, filename, &inode);
+  dir_close (dir);
   free(copy);
   return inode != NULL ? file_open (inode) : NULL;
 }
 
-/* Deletes the file named NAME.
+
+/* Deletes the file or empty directory named NAME.
    Returns true if successful, false on failure.
    Fails if no file named NAME exists,
    or if an internal memory allocation fails. */
 bool
 filesys_remove (const char *name) 
 {
+
   char *copy = (char *) malloc(strlen(name) + 1); 
   if (copy == NULL)
   {
@@ -250,10 +230,10 @@ filesys_remove (const char *name)
   char *filename;
 
   struct dir *dir = filesys_path_to_dir (copy, &filename);
+
   bool success = dir != NULL && dir_remove (dir, filename);
   dir_close (dir); 
   free(copy);
-
   return success;
 }
 
@@ -273,11 +253,17 @@ filesys_path_to_dir (char *path, char **filename)
 
   struct dir *cur_dir;
 
+  /* Special case for path == "/" */
+  if (!strcmp(path, "/"))
+  {
+    *filename = ".";
+    return dir_open_root ();
+  }
+
   if (path[0] == '/')
   {
     cur_dir = dir_open_root ();
     path++;
-    //printf("dir_open_root is %p\n", cur_dir);
   }
   else
   {
@@ -292,6 +278,7 @@ filesys_path_to_dir (char *path, char **filename)
 
   if (token == NULL)
   {
+    dir_close(cur_dir);
     return NULL;
   }
 
@@ -304,6 +291,7 @@ filesys_path_to_dir (char *path, char **filename)
     // Nothing left to parse, success!
     if (token == NULL)
     {
+      inode_close(cur_inode);
       break;
     }
 
@@ -319,10 +307,8 @@ filesys_path_to_dir (char *path, char **filename)
     struct dir *old = cur_dir;
    
     // Descend 
-    //printf("DESCENDING! cur_dir = %p\n", cur_dir);
     //dir_close(cur_dir);
     cur_dir = dir_open(cur_inode);
-    //printf("cur_dir is %p\n", cur_dir);
 
     dir_close(old);
 

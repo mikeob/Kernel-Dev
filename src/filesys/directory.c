@@ -51,7 +51,7 @@ dir_create (block_sector_t sector, size_t entry_cnt)
   result = result && dir_add (new_dir, "..", parent);
 
   // Clean up
-  inode_close (new_inode);
+  //inode_close (new_inode);
   dir_close (new_dir);
 
   return result;
@@ -210,7 +210,8 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector)
 
 /* Removes any entry for NAME in DIR.
    Returns true if successful, false on failure,
-   which occurs only if there is no file with the given NAME. */
+   which occurs only if there is no file with the given NAME
+   or if we're attempting to remove an open directory. */
 bool
 dir_remove (struct dir *dir, const char *name) 
 {
@@ -226,10 +227,42 @@ dir_remove (struct dir *dir, const char *name)
   if (!lookup (dir, name, &e, &ofs))
     goto done;
 
+
   /* Open inode. */
   inode = inode_open (e.inode_sector);
   if (inode == NULL)
     goto done;
+
+
+
+  /* If it is a directory.. */
+  if (inode_is_dir (inode))
+  {
+
+    struct dir *to_remove = dir_open(inode);
+    if (to_remove == NULL)
+    {
+      PANIC ("dir_open failure in dir_remove!");
+    }
+
+    char name[NAME_MAX + 1];
+
+    /* If directory is open or non-empty */ 
+    if (inode_open_count (inode) > 1)
+    {
+      dir_close (to_remove);
+      goto done;
+    }
+    
+    if (dir_readdir (to_remove, name))
+    {
+      dir_close (to_remove);
+      goto done;
+    }
+
+    dir_close (to_remove);
+
+  }
 
   /* Erase directory entry. */
   e.in_use = false;
@@ -241,7 +274,8 @@ dir_remove (struct dir *dir, const char *name)
   success = true;
 
  done:
-  inode_close (inode);
+  if (!inode_is_dir (inode))
+    inode_close (inode);
   return success;
 }
 

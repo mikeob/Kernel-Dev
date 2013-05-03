@@ -131,6 +131,7 @@ void close_fd (int fd)
 	struct file_descriptor* fd_ = check_fd (fd);
 
   file_close(fd_->file_ptr);
+  dir_close (fd_->dir);
   
 	list_remove (&fd_->elem);
 	free(fd_);
@@ -278,6 +279,7 @@ bool sys_remove (struct intr_frame *f)
   const char *file = *(char **) syscall_read_stack(f, 1);
   check_pointer((void *) file);
 
+
   lock_acquire (&file_lock);
   bool ans = filesys_remove (file);
   lock_release (&file_lock);
@@ -300,9 +302,10 @@ int sys_open (struct intr_frame *f)
   lock_release (&file_lock);
 
   if (temp_ptr == NULL)
-    {
+  {
       return -1;
-    }
+  }
+
 
   /* Find the lowest available file descriptor  */
   struct list_elem *e;
@@ -506,7 +509,7 @@ bool sys_mkdir (struct intr_frame *f)
 bool sys_readdir (struct intr_frame *f)
 {
   int fd_ = *(int *) syscall_read_stack(f, 1); 
-  const char *name = *(char **) syscall_read_stack(f, 2);
+  char *name = *(char **) syscall_read_stack(f, 2);
   check_pointer ((void *) name);
 
   //TODO Possibly enforce the size of name?
