@@ -28,7 +28,8 @@ bool
 dir_create (block_sector_t sector, size_t entry_cnt)
 {
 
-  bool result = inode_create (sector, entry_cnt * sizeof (struct dir_entry), true);
+  bool result = inode_create (sector, entry_cnt * sizeof (struct dir_entry), 
+      true);
   
   struct inode *new_inode = inode_open (sector);
   if (new_inode == NULL)
@@ -65,7 +66,8 @@ dir_open (struct inode *inode)
   if (inode != NULL && dir != NULL)
     {
       dir->inode = inode;
-      dir->pos = 0;
+      // Move the position past '.' and '..'
+      dir->pos = 2 * (sizeof (struct dir_entry));
       return dir;
     }
   else
