@@ -92,6 +92,7 @@ bool
 filesys_chdir (const char *name)
 {
 
+
   if (strlen(name) == 0)
   {
     return false;
@@ -110,6 +111,7 @@ filesys_chdir (const char *name)
 
   struct dir *dir = filesys_path_to_dir(copy, &filename);
 
+
   if (dir == NULL)
   {
     return false;
@@ -117,11 +119,14 @@ filesys_chdir (const char *name)
 
   if (dir_lookup(dir, filename, &inode) && inode_is_dir(inode))
   {
-    dir_close(thread_current()->cur_dir);
+    struct dir *old = thread_current ()->cur_dir;
     thread_current ()->cur_dir = dir_open(inode);
-    dir_close (dir);
+    dir_close(dir);
+    dir_close(old);
     return true;
   }
+
+
 
   dir_close (dir);
 
@@ -172,6 +177,7 @@ filesys_mkdir (const char *name)
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);
 
+
   dir_close (dir);
   free(copy);
 
@@ -203,6 +209,7 @@ filesys_open (const char *name)
   {
     return NULL;
   }
+
   
   struct inode *inode;
   dir_lookup(dir, filename, &inode);

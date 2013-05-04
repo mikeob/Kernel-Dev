@@ -236,7 +236,6 @@ void syscall_exit (int status)
   
   if (ex->abandoned && ex)
   {
-    //printf("Freeing %p\n", ex);
     free(ex);
   }
 
@@ -291,8 +290,6 @@ bool sys_remove (struct intr_frame *f)
 
 int sys_open (struct intr_frame *f)
 {
-  //TODO Can open directories
-
   const char *file = *(char **) syscall_read_stack(f, 1);
   check_pointer((void *) file);
 
@@ -326,7 +323,7 @@ int sys_open (struct intr_frame *f)
   /* Set up a new file descriptor struct */
   struct file_descriptor *new_fd = malloc(sizeof(struct file_descriptor));
   new_fd->is_dir = inode_is_dir(inode) ? true : false;
-  new_fd->dir = new_fd->is_dir ? dir_open(inode) : NULL;
+  new_fd->dir = new_fd->is_dir ? dir_open(inode_reopen(inode)) : NULL;
   new_fd->fd = lowest + 1;
   new_fd->file_ptr = temp_ptr;
  
@@ -511,8 +508,6 @@ bool sys_readdir (struct intr_frame *f)
   int fd_ = *(int *) syscall_read_stack(f, 1); 
   char *name = *(char **) syscall_read_stack(f, 2);
   check_pointer ((void *) name);
-
-  //TODO Possibly enforce the size of name?
 
   struct file_descriptor *fd = check_fd(fd_);
 

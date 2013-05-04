@@ -86,6 +86,7 @@ dir_open_root (void)
   return dir_open (inode_open (ROOT_DIR_SECTOR));
 }
 
+
 /* Opens and returns a new directory for the same inode as DIR.
    Returns a null pointer on failure. */
 struct dir *
@@ -297,4 +298,17 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
         } 
     }
   return false;
+}
+
+void 
+dir_print_dir (struct dir *dir)
+{
+  struct dir * temp = dir_reopen(dir);
+  char name[NAME_MAX + 1];
+  while (dir_readdir (temp, name))
+  {
+    printf("%s\n", name);
+  }
+  dir_close(temp);
+  
 }
