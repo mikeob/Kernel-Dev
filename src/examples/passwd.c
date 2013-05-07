@@ -3,6 +3,7 @@
 #include <string.h>
 #include "cmdline.h"
 #include "hash.h"
+#include "verify.h"
 
 int main (void)
 {
@@ -22,6 +23,7 @@ int main (void)
 	char username_root [20];
   char userpasswd [20];
 	char passwd_verify [20];
+  char oldpasswd [20];
 
 	/* If root, get username. */
 	if (getuid() == 0)
@@ -91,22 +93,6 @@ int main (void)
 
 	seek (fd, 0);
 
-	/* Request new password. */
-	printf ("New password: ");
-	read_line (userpasswd, sizeof userpasswd, true);
-	printf ("Re-enter password: ");
-	read_line (passwd_verify, sizeof passwd_verify, true);
-
-	/* If passwords don't match. */
-	while (strcmp (userpasswd, passwd_verify))
-	{
-		printf ("Passwords do not match. Please try again.\n");
-		printf ("New password: ");
-		read_line (userpasswd, sizeof userpasswd, true);
-		printf ("Re-enter password: ");
-		read_line (passwd_verify, sizeof passwd_verify, true);
-	}
-	
 	/* Loop through files. */
 	for (;;)
 	{
@@ -173,6 +159,42 @@ int main (void)
 		seek (fd, tell (fd) - 1);
 		if (write (fd, x, 1) == -1)
 			return 0;
+	}
+
+	if (getuid() != 0)
+	{
+		int tries = 3;
+		printf ("Old password: ");
+		read_line (oldpasswd, sizeof oldpasswd, true);
+		
+		while (!verify (username, oldpasswd, NULL, NULL) && tries > 0)
+		{
+			printf ("Incorrect password.\nOld password: ");
+			read_line (oldpasswd, sizeof oldpasswd, true);
+			tries--;
+		}
+	
+		if (tries == 0)
+		{
+			printf ("Too many password failures.");
+			return 0;
+		}
+	}
+
+	/* Request new password. */
+	printf ("New password: ");
+	read_line (userpasswd, sizeof userpasswd, true);
+	printf ("Re-enter password: ");
+	read_line (passwd_verify, sizeof passwd_verify, true);
+
+	/* If passwords don't match. */
+	while (strcmp (userpasswd, passwd_verify))
+	{
+		printf ("Passwords do not match. Please try again.\n");
+		printf ("New password: ");
+		read_line (userpasswd, sizeof userpasswd, true);
+		printf ("Re-enter password: ");
+		read_line (passwd_verify, sizeof passwd_verify, true);
 	}
 
 	close (fd);

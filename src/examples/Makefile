@@ -35,7 +35,7 @@ login_SRC = login.c cmdline.c hash.c verify.c
 getty_SRC = getty.c
 sudo_SRC = sudo.c cmdline.c hash.c
 chmod_SRC = chmod.c
-passwd_SRC = passwd.c cmdline.c hash.c
+passwd_SRC = passwd.c cmdline.c hash.c verify.c
 
 include $(SRCDIR)/Make.config
 include $(SRCDIR)/Makefile.userprog
