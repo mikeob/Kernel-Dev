@@ -17,3 +17,5 @@ login = startup + "run login"
 getty = startup + "run getty"
 
 prompt = "--"
+
+pintos_bootup = 3
