@@ -19,7 +19,7 @@ def usage():
 Usage: python stdriver.py [options] [tests1.tst tests2.tst] ...
 	-k project			userprog, threads, vm
 	-t testname			Run only tests who names contains 'testname'
-	-a 							Run basic tests
+	-b 							Run basic tests
 	-v 							Verbose
 	"""
 

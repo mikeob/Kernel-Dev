@@ -21,19 +21,33 @@ os.chdir(kernel_location)
 c = pexpect.spawn(def_module.shell, drainpty=True, logfile=logfile)
 atexit.register(force_pintos_termination, pintos_process=c)
 
-c.timeout = 30
+c.timeout = 90
 
 # Give Pintos time to boot
 time.sleep(7)
 
 assert c.expect('Username:') == 0, "Login did not ask for username"
-c.send('root\r')
+c.sendline('kevin')
 
 assert c.expect('Password:') == 0, "Login did not ask for password"
-c.send('root\r')
+c.sendline('kevin')
 
-assert c.expect(def_module.prompt) == 0, "Shell did not start"
-c.send('exit\r')
+assert c.expect(def_module.prompt) == 0, "Shell prompt did not load"
+c.sendline('cat etc/group')
+time.sleep(3)
+
+assert c.expect('exec failed\n'+def_module.prompt) == 0, "Error"
+c.send('sudo cat')
+time.sleep(3)
+c.sendline(' etc/group')
 time.sleep(5)
 
+assert c.expect('[Sudo] password for kevin:') == 0, "Sudo did not prompt for password"
+c.send('kevin\r')
+
+assert c.expect('root:x:0:root\nsudo:x:27:kevin mike ollie \
+	cat: exit(0)\nsudo: exit(0)\n"sudo cat etc/group": exit code 0') == 0, "did not cat etc/group"
+
+c.send('exit\r')
+time.sleep(5)
 shellio.success()

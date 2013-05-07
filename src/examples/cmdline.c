@@ -15,10 +15,11 @@ read_line (char line[], size_t size, bool password)
     {
       char c;
       read (STDIN_FILENO, &c, 1);
-
-      switch (c) 
+      
+			switch (c) 
         {
-        case '\r':
+				case '\r':
+        case 10: // \r and \n
           *pos = '\0';
           putchar ('\n');
           return;
