@@ -685,7 +685,7 @@ inode_check_permissions (struct inode *inode, int group, int flag)
   {
     case FILE_USER:
       {
-				if (thread_current ()->ruid == 0)
+				if (thread_current ()->ruid == 0 || thread_current ()->euid == 0)
 					return 1;
 
 				if (inode->data.user_id != thread_current ()->euid)
