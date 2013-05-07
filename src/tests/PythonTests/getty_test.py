@@ -42,6 +42,24 @@ c.send('kevin\r')
 
 assert c.expect(def_module.prompt) == 0, "Shell did not start"
 c.send('exit\r')
+
+assert c.expect('Username:') == 0, "Login did not ask for username"
+c.send('ollie\r')
+
+assert c.expect('Password:') == 0, "Login did not ask for password"
+c.send('mike\r')
+
+assert c.expect('Login failed.') == 0, "Login should have failed"
+
+assert c.expect('Username:') == 0, "Login did not ask for username"
+c.send('ollie\r')
+
+assert c.expect('Password:') == 0, "Login did not ask for password"
+c.send('ollie\r')
+
+assert c.expect(def_module.prompt) == 0, "Shell did not start"
+c.send('exit\r')
+
 time.sleep(8)
 
 shellio.success()
