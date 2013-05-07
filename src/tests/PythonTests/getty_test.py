@@ -18,7 +18,7 @@ kernel = sys.argv[2]
 kernel_location = def_module.kernel[kernel]
 os.chdir(kernel_location)
 
-c = pexpect.spawn(def_module.login, drainpty=True, logfile=logfile)
+c = pexpect.spawn(def_module.getty, drainpty=True, logfile=logfile)
 atexit.register(force_pintos_termination, pintos_process=c)
 
 c.timeout = 30
@@ -35,5 +35,15 @@ c.send('root\r')
 assert c.expect(def_module.prompt) == 0, "Shell did not start"
 c.send('exit\r')
 time.sleep(5)
+
+assert c.expect('Username:') == 0, "Login did not ask for username"
+c.send('kevin\r')
+
+assert c.expect('Password:') == 0, "Login did not ask for password"
+c.send('kevin\r')
+
+assert c.expect(def_module.prompt) == 0, "Shell did not start"
+c.send('exit\r')
+time.sleep(8)
 
 shellio.success()
