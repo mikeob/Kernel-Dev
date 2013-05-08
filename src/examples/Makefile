@@ -5,7 +5,7 @@ SRCDIR = ..
 # and then add a name_SRC line that lists its source files.
 PROGS = cat cmp cp echo halt hex-dump ls mcat mcp mkdir pwd rm shell \
 	bubsort insult lineup matmult recursor login getty sudo chmod passwd \
-	touch
+	touch write
 
 # Should work from project 2 onward.
 cat_SRC = cat.c
@@ -38,6 +38,7 @@ sudo_SRC = sudo.c cmdline.c hash.c
 chmod_SRC = chmod.c
 passwd_SRC = passwd.c cmdline.c hash.c verify.c
 touch_SRC = touch.c
+write_SRC = write.c
 
 include $(SRCDIR)/Make.config
 include $(SRCDIR)/Makefile.userprog

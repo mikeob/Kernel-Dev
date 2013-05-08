@@ -26,6 +26,7 @@ groupadd
 groupdel
 getty
 touch
+write
 *.d
 *.o
 *.a

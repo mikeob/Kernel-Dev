@@ -35,5 +35,6 @@ main (int argc, char *argv[])
         }
       close (fd);
     }
+	printf("\n");
   return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }
