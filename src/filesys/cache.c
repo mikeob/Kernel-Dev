@@ -3,6 +3,7 @@
 #include "filesys/free-map.h"
 #include "filesys/off_t.h"
 #include "threads/synch.h"
+#include "threads/malloc.h"
 #include <debug.h>
 #include <stdio.h>
 #include <string.h>
@@ -12,13 +13,12 @@
 /* Cache is limited to 64 sectors */
 #define CACHE_LIMIT 64
 #define BLOCK_SIZE 512
-static struct cache_block blocks[CACHE_LIMIT];
 
 /* Definition for the cache block. Opaque to outsiders,
  * so we can assume any access to these fields is
  * done inside cache.c */
 struct cache_block {
-  block_sector_id bs_id;        /* Indicates the block sector. 0 if unused */
+  block_sector_t bs_id;        /* Indicates the block sector. 0 if unused */
   bool dirty;
   bool valid;
   int num_readers;
@@ -27,11 +27,17 @@ struct cache_block {
   struct lock lock;
   struct condition cond_write;  /* Condition variable for writers */
   struct condition cond_read;   /* Condition variable for readers */
-  //TODO Usage info for eviction policy
   void * data;
 };
 
+/* Static variables */
 struct block *fs_device;
+static struct cache_block blocks[CACHE_LIMIT];
+
+
+/* Static functions */
+static void init_block(struct cache_block *b, block_sector_t sector);
+static struct cache_block * evict (block_sector_t sector);
 
 /* Initializes our cache buffer */
 void cache_init (void)
@@ -74,7 +80,7 @@ writeback(struct cache_block *b)
 
   if (b->valid && b->dirty)
   {
-    block_write(fs_device, b->bs_id, b->data)
+    block_write(fs_device, b->bs_id, b->data);
     b->dirty = false;
   }
 }
@@ -89,7 +95,7 @@ void cache_flush (void)
   for (i = 0; i < CACHE_LIMIT; i++)
   {
     lock_acquire(&blocks[i].lock);
-    writeback(blocks[i]);
+    writeback(&blocks[i]);
     lock_release(&blocks[i].lock);
   }
 }
@@ -100,7 +106,7 @@ void cache_flush (void)
  * Assumes the lock on the block is held upon calling
  * init_block */
 static void
-init_block(struct cache_block *b, disk_sector_t sector)
+init_block(struct cache_block *b, block_sector_t sector)
 {
   b->bs_id = sector;
   b->valid = false;
@@ -117,7 +123,7 @@ init_block(struct cache_block *b, disk_sector_t sector)
  *
  * Second, evicts a block and initalizes one for use */
 static struct cache_block *
-obtain_block (disk_sector_t sector)
+obtain_block (block_sector_t sector)
 {
 
   // Check to see if block already here!
@@ -129,7 +135,7 @@ obtain_block (disk_sector_t sector)
     lock_release(&blocks[i].lock);
   }
   
-  return evict();
+  return evict(sector);
 }
 
 /* Evicts a block, writing its data back to disk if 
@@ -138,7 +144,7 @@ obtain_block (disk_sector_t sector)
  * Returns the index of the block evicted, and holds the lock through
  * return.*/
 static struct cache_block *
-evict (void)
+evict (block_sector_t sector)
 {
   struct cache_block *b = NULL;
 
@@ -146,7 +152,7 @@ evict (void)
   int i;
   for (i = 0; i < CACHE_LIMIT; i++)
   {
-    b = blocks[i];
+    b = &blocks[i];
     lock_acquire(&b->lock);
     if (b->num_readers == 0 && b->num_writers == 0 && b->pending_requests == 0)
     {
@@ -173,7 +179,7 @@ evict (void)
 /* Reserves a block in the buffer cache dedicated to hold this sector
  * possibly evicting some other unused buffer. Either grants
  * exclusive or shared access */
-struct cache_block * cache_get_block (disk_sector_t sector, bool exclusive)
+struct cache_block * cache_get_block (block_sector_t sector, bool exclusive)
 {
   
   struct cache_block *b = obtain_block(sector);
@@ -212,7 +218,7 @@ void cache_put_block (struct cache_block *b)
   if (b->num_writers > 0)
   {
     b->num_writers--;
-    assert(b->num_writers == 0);
+    ASSERT(b->num_writers == 0);
 
     // Signal others!
     cond_broadcast(&b->cond_read, &b->lock);
