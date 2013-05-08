@@ -20,6 +20,9 @@ void *cache_read_block (struct cache_block *b);
 void *cache_zero_block (struct cache_block *b);
 void cache_mark_block_dirty (struct cache_block *b);
 
+void cache_flush (void);
+
+
 /* TODO 1. Readahead
  *      2. Shutdown */
 
