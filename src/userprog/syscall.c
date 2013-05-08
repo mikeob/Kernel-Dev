@@ -19,7 +19,6 @@
 static void syscall_handler (struct intr_frame *);
 static void* syscall_read_stack (struct intr_frame *f, int locale);
 void syscall_exit (int status);
-static struct lock file_lock;
 static void check_pointer(void *p);
 static struct file_descriptor* check_fd (int fd);
 static void close_fd (int fd);
@@ -48,7 +47,6 @@ int sys_inumber (struct intr_frame *f);
 
 void syscall_init (void) 
 {
-	lock_init (&file_lock);	
   lock_init (&exiting_lock);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
@@ -263,9 +261,7 @@ bool sys_create (struct intr_frame *f)
   check_pointer((void *) file);
   unsigned initial_size = *(unsigned *) syscall_read_stack(f, 2);
   
-  lock_acquire (&file_lock);
   bool ans = filesys_create (file, initial_size);	
-  lock_release (&file_lock);
 
   return ans;
 }
@@ -279,9 +275,7 @@ bool sys_remove (struct intr_frame *f)
   check_pointer((void *) file);
 
 
-  lock_acquire (&file_lock);
   bool ans = filesys_remove (file);
-  lock_release (&file_lock);
 
   return ans;
 }
@@ -294,9 +288,7 @@ int sys_open (struct intr_frame *f)
   check_pointer((void *) file);
 
   /* Return failure if file does not exist */
-  lock_acquire (&file_lock);
   struct file *temp_ptr = filesys_open(file);
-  lock_release (&file_lock);
 
   if (temp_ptr == NULL)
   {
@@ -339,9 +331,7 @@ int sys_filesize (struct intr_frame *f)
 {
   int fd = *(int *) syscall_read_stack(f, 1);
 
-  lock_acquire (&file_lock);
   int ans = file_length(check_fd (fd)->file_ptr);
-  lock_release (&file_lock);
 
   return ans;
 }
@@ -385,7 +375,6 @@ int sys_wait (struct intr_frame *f)
 
 int sys_write (struct intr_frame *f)
 {
-  lock_acquire (&file_lock);
   int fd = *(int *) syscall_read_stack(f, 1);
   void *buffer = *(void **) syscall_read_stack(f, 2);
   check_pointer(buffer);
@@ -424,7 +413,6 @@ int sys_write (struct intr_frame *f)
        ans = file_write (file, buffer, size);
      }
   }
-  lock_release (&file_lock);
 
   return ans;
 }
@@ -436,9 +424,7 @@ void sys_seek (struct intr_frame *f)
 
   struct file_descriptor *fd_ = check_fd (fd);
 
-  lock_acquire (&file_lock);
   file_seek(fd_->file_ptr, pos);
-  lock_release (&file_lock);
 }
 
 
@@ -446,9 +432,7 @@ unsigned sys_tell (struct intr_frame *f)
 {
   int fd = *(int *) syscall_read_stack(f, 1);
   struct file_descriptor *fd_ = check_fd (fd);
-  lock_acquire (&file_lock);
   unsigned ans = file_tell(fd_->file_ptr);
-  lock_release (&file_lock);
 
   return ans;
 }
@@ -468,9 +452,7 @@ bool sys_chdir (struct intr_frame *f)
   const char *dir = *(char **) syscall_read_stack(f, 1);
   check_pointer ((void *) dir);
   
-  lock_acquire(&file_lock);
   bool ans = filesys_chdir(dir);
-  lock_release(&file_lock);
 
   return ans;
 }
@@ -484,9 +466,7 @@ bool sys_mkdir (struct intr_frame *f)
   const char *dir = *(char **) syscall_read_stack(f, 1);
   check_pointer ((void *) dir);
 
-  lock_acquire(&file_lock);
   bool ans = filesys_mkdir(dir);
-  lock_release(&file_lock);
 
   return ans;
 }
