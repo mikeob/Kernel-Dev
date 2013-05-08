@@ -215,7 +215,6 @@ syscall_handler (struct intr_frame *f)
 							if (!inode_check_permissions (fd_->file_ptr->inode, FILE_GROUP, FILE_READ))
 								if (!inode_check_permissions (fd_->file_ptr->inode, FILE_OTHER, FILE_READ))
 								{
-									//printf ("Read permission denied.\n");
 									f->eax = -1; // Do not have permissions to read this file.
 									break;
 								}

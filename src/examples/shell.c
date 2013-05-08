@@ -40,7 +40,7 @@ main (void)
         }
     }
 
-  printf ("Shell exiting.");
+  printf ("Shell exiting.\n");
   return EXIT_SUCCESS;
 }
 

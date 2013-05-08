@@ -26,6 +26,11 @@ main (int argc, char *argv[])
           int bytes_read = read (fd, buffer, sizeof buffer);
           if (bytes_read == 0)
             break;
+					if (bytes_read == -1)
+						{
+							printf("cat: %s: Permission denied\n", argv[i]);
+							break;
+						}	
           write (STDOUT_FILENO, buffer, bytes_read);
         }
       close (fd);
