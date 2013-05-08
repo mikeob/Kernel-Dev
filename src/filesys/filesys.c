@@ -86,6 +86,7 @@ filesys_create (const char *name, off_t initial_size)
 	char * chmod = "chmod";
   char * echo = "echo";
 	char * passwd = "passwd";
+  char * touch = "touch";
 
 	if (!strcmp (name, shell))
 		filesys_chmod (name, false, false, 7, 4, 1);
@@ -102,7 +103,10 @@ filesys_create (const char *name, off_t initial_size)
 	if (!strcmp (name, passwd))
 		filesys_chmod (name, true, false, 7, 4, 1);
 
-  return success;
+  if (!strcmp (name, touch))
+		filesys_chmod (name, false, false, 7, 4, 1);
+
+	return success;
 }
 
 bool
