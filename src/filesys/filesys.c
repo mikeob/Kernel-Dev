@@ -89,6 +89,7 @@ filesys_create (const char *name, off_t initial_size)
   char * touch = "touch";
 	char * cat = "cat";
 	char * write = "write";
+	char * ls = "ls";
 
 	if (!strcmp (name, shell))
 		filesys_chmod (name, false, false, 7, 4, 1);
