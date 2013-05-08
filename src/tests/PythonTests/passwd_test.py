@@ -10,9 +10,7 @@ def force_pintos_termination(pintos_process):
 
 definitions_scriptname = sys.argv[1]
 def_module = imp.load_source('', definitions_scriptname)
-logfile = None
-if hasattr(def_module, 'logfile'):
-	logfile = def_module.logfile
+logfile = file("log/passwd_test.log", "w")
 
 kernel = sys.argv[2]
 kernel_location = def_module.kernel[kernel]

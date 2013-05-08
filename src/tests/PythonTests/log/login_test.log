@@ -10,6 +10,7 @@ Copying ../group to scratch partition...
 Copying ../passwd to scratch partition...
 Copying ../shadow to scratch partition...
 Copying ../../examples/cat to scratch partition...
+Copying ../../examples/touch to scratch partition...
 squish-pty bochs -q
 00000000000i[     ] reading configuration from bochsrc.txt
 ========================================================================
@@ -29,10 +30,10 @@ Pintos booting with 4,096 kB RAM...
 Calibrating timer...  204,600 loops/s.
 Initializing EHCI
 Initializing UHCI
-hda: 5,040 sectors (2 MB), model "BXHD00011", serial "Generic 1234"
+hda: 6,048 sectors (2 MB), model "BXHD00011", serial "Generic 1234"
 hda1: 204 sectors (102 kB), Pintos OS kernel (20)
 hda2: 4,096 sectors (2 MB), Pintos file system (21)
-hda3: 697 sectors (348 kB), Pintos scratch (22)
+hda3: 778 sectors (389 kB), Pintos scratch (22)
 filesys: using hda2
 scratch: using hda3
 Formatting file system...done.
@@ -50,6 +51,7 @@ Putting 'etc/group' into the file system...
 Putting 'etc/passwd' into the file system...
 Putting 'etc/shadow' into the file system...
 Putting 'cat' into the file system...
+Putting 'touch' into the file system...
 Erasing ustar archive...
 Executing 'login':
 Username: rootroot
@@ -59,11 +61,11 @@ Shell starting...
 Shell exiting.shell: exit(0)
 login: exit(0)
 Execution of 'login' complete.
-Timer: 31466 ticks
-Thread: 29648 idle ticks, 1639 kernel ticks, 190 user ticks
-hda2 (filesys): 1224 reads, 1443 writes
-hda3 (scratch): 696 reads, 2 writes
-Console: 1411 characters output
+Timer: 32465 ticks
+Thread: 30500 idle ticks, 1785 kernel ticks, 191 user ticks
+hda2 (filesys): 1307 reads, 1607 writes
+hda3 (scratch): 777 reads, 2 writes
+Console: 1451 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

@@ -55,5 +55,5 @@ cmp = file("cmp/sudo_test.cmp", "r")
 cmp_text = cmp.read()
 cmp.close()
 
-assert re.search(cmp_text, log_text) != None, "output of operations is not correct"
+assert re.search(cmp_text, log_text, re.DOTALL) != None, "output of operations is not correct"
 shellio.success()

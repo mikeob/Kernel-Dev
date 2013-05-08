@@ -11,7 +11,7 @@ startup = "pintos -v --filesys-size=2 -p ../../examples/login -a login \
 -p ../../examples/echo -a echo -p ../../examples/sudo -a sudo -p \
 ../sudoers -a etc/sudoers -p ../group -a etc/group -p ../passwd -a \
 etc/passwd -p ../shadow -a etc/shadow -p ../../examples/cat \
--a cat -- -f -q "
+-a cat -p ../../examples/touch -a touch -- -f -q "
 
 login = startup + "run login"
 getty = startup + "run getty"
