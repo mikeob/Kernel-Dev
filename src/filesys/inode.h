@@ -6,6 +6,7 @@
 #include "devices/block.h"
 
 struct bitmap;
+struct cache_block;
 
 void inode_init (void);
 bool inode_create (block_sector_t, off_t, bool is_dir);
