@@ -19,10 +19,9 @@ os.chdir(kernel_location)
 c = pexpect.spawn(def_module.getty, drainpty=True, logfile=logfile)
 atexit.register(force_pintos_termination, pintos_process=c)
 
-c.timeout = 30
+c.timeout = def_module.pintos_timeout
 
-# Give Pintos time to boot
-time.sleep(7)
+time.sleep(def_module.pintos_bootup)
 
 assert c.expect('Username:') == 0, "Login did not ask for username"
 c.send('ollie\r')
@@ -57,7 +56,6 @@ c.send('new\r')
 
 assert c.expect('Password changed.') == 0, "Passwd change was not confirmed"
 c.send('exit\r')
-time.sleep(5)
 
 assert c.expect('Username:') == 0, "Login did not ask for username"
 c.send('ollie\r')
@@ -75,7 +73,6 @@ c.send('new\r')
 
 assert c.expect(def_module.prompt) == 0, "Shell did not start"
 c.send('exit\r')
-time.sleep(5)
 
 assert c.expect('Username:') == 0, "Login did not ask for username"
 c.send('root\r')
@@ -97,7 +94,6 @@ c.send('newroot\r')
 
 assert c.expect('Password changed.') == 0, "Passwd change was not confirmed"
 c.send('exit\r')
-time.sleep(5)
 
 assert c.expect('Username:') == 0, "Login did not ask for username"
 c.send('ollie\r')
@@ -107,6 +103,5 @@ c.send('newroot\r')
 
 assert c.expect(def_module.prompt) == 0, "Shell did not start"
 c.send('exit\r')
-time.sleep(5)
 
 shellio.success()

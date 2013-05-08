@@ -19,7 +19,7 @@ os.chdir(kernel_location)
 c = pexpect.spawn(def_module.login, drainpty=True, logfile=logfile)
 atexit.register(force_pintos_termination, pintos_process=c)
 
-c.timeout = 30
+c.timeout = def_module.pintos_timeout
 
 # Give Pintos time to boot
 time.sleep(def_module.pintos_bootup)
@@ -32,6 +32,5 @@ c.send('root\r')
 
 assert c.expect(def_module.prompt) == 0, "Shell did not start"
 c.send('exit\r')
-time.sleep(5)
 
 shellio.success()

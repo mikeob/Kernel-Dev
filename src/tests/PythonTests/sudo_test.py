@@ -18,7 +18,7 @@ os.chdir(kernel_location)
 c = pexpect.spawn(def_module.login, drainpty=True, logfile=logfile)
 atexit.register(force_pintos_termination, pintos_process=c)
 
-c.timeout = 30
+c.timeout = def_module.pintos_timeout
 
 # Give Pintos time to boot
 time.sleep(def_module.pintos_bootup)
@@ -35,25 +35,20 @@ c.sendline('cat etc/group')
 assert c.expect(def_module.prompt) == 0, "Shell did not start"
 c.sendline('sudo cat etc/group')
 
-time.sleep(2)
-
-#assert c.expect("[Sudo] password for kevin: ") == 0, "sudo did not prompt for password"
+name = shellio.parse_regular_expression(c, '\n\[Sudo] password for (\w+):')
+assert str(name[0]) == 'kevin', "sudo did not ask for password correctly"
 c.sendline('kevin')
 
-time.sleep(2) # Give time for output to print
+assert c.expect('root:x:0:root') == 0
+assert c.expect('sudo:x:27:kevin mike ollie') == 0
+#code = shellio.parse_regular_expression(c, 'cat: exit\((\d)\)')
+#assert code[0] == 0
+#code2 = shellio.parse_regular_expression(c, 'sudo: exit\((\d)\)')
+#assert code2[0] == 0, str(code2)
+
+c.expect('"sudo cat etc/group": exit code 0') == 0
 
 assert c.expect(def_module.prompt) == 0, "Shell did not start"
 c.send('exit\r')
-time.sleep(5)
 
-os.chdir(cur_dir)
-log = file("log/sudo_test.log", "r")
-log_text = log.read()
-log.close()
-
-cmp = file("cmp/sudo_test.cmp", "r")
-cmp_text = cmp.read()
-cmp.close()
-
-assert re.search(cmp_text, log_text, re.DOTALL) != None, "output of operations is not correct"
 shellio.success()

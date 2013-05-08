@@ -18,4 +18,5 @@ getty = startup + "run getty"
 
 prompt = "--"
 
-pintos_bootup = 3
+pintos_bootup = 1
+pintos_timeout = 3

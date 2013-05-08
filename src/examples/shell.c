@@ -56,8 +56,8 @@ read_line (char line[], size_t size)
     {
       char c;
       read (STDIN_FILENO, &c, 1);
-
-      switch (c) 
+      
+			switch (c) 
         {
 				case '\r':
         case 10: // \r and \n
@@ -66,6 +66,7 @@ read_line (char line[], size_t size)
           return;
 
         case '\b':
+				case 127: // backspace with -v option
           backspace (&pos, line);
           break;
 
