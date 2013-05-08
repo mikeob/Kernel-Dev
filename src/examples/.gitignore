@@ -25,6 +25,7 @@ userdel
 groupadd
 groupdel
 getty
+touch
 *.d
 *.o
 *.a
