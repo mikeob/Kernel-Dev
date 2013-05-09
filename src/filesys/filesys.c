@@ -8,13 +8,12 @@
 #include "filesys/free-map.h"
 #include "filesys/inode.h"
 #include "filesys/directory.h"
+#include "filesys/cache.h"
 
 /* Partition that contains the file system. */
 struct block *fs_device;
 
 static void do_format (void);
-static struct inode *path_to_inode (char *path);
-static bool verbose = false;
 
 /* Initializes the file system module.
    If FORMAT is true, reformats the file system. */
@@ -39,6 +38,8 @@ filesys_init (bool format)
 void
 filesys_done (void) 
 {
+  cache_flush ();
+  free_map_flush ();
   free_map_close ();
 }
 
@@ -50,6 +51,7 @@ bool
 filesys_create (const char *name, off_t initial_size) 
 {
 
+  //printf("create(%s)\n", name);
   // Don't accept empty string
   if (strlen(name) == 0)
   {
@@ -68,11 +70,13 @@ filesys_create (const char *name, off_t initial_size)
 
   block_sector_t inode_sector = 0;
   struct dir *dir = filesys_path_to_dir(copy, &filename);
+
   
   bool success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
                   && inode_create (inode_sector, initial_size, false)
                   && dir_add (dir, filename, inode_sector));
+
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);
   dir_close (dir);
@@ -136,6 +140,7 @@ filesys_chdir (const char *name)
 bool
 filesys_mkdir (const char *name)
 {
+  //printf("mkdir (%s)\n", name);
   if (strlen(name) == 0)
   {
     return false;
@@ -193,6 +198,7 @@ filesys_mkdir (const char *name)
 struct file *
 filesys_open (const char *name)
 {
+  //printf("filesys_open(%s)\n", name);
 
   char *copy = (char *) malloc(strlen(name) + 1); 
   if (copy == NULL)
@@ -212,9 +218,15 @@ filesys_open (const char *name)
 
   
   struct inode *inode;
-  dir_lookup(dir, filename, &inode);
+  if (!dir_lookup(dir, filename, &inode))
+  {
+    //printf("DIR_LOOKUP FAILURE IN FILESYS_OPEN\n");
+  }
   dir_close (dir);
   free(copy);
+  //printf("Filesys_open given inode %p\n", inode);
+  //printf("inode sector is %u\n", inode_get_inumber(inode));
+
   return inode != NULL ? file_open (inode) : NULL;
 }
 
@@ -226,6 +238,7 @@ filesys_open (const char *name)
 bool
 filesys_remove (const char *name) 
 {
+  //printf("remove %s\n", name);
 
   char *copy = (char *) malloc(strlen(name) + 1); 
   if (copy == NULL)
@@ -323,67 +336,6 @@ filesys_path_to_dir (char *path, char **filename)
 
   return cur_dir;
 }
-
-
-/* Given a -MUTABLE- path, returns the inode associated
- * with the last file in the path.
- *
- * Will fail if any of the inodes along
- * the way do not exist, or if they are files.
- *
- * The caller is expected to close the provided inode.
- *
- * */
-/*
-static struct inode *
-path_to_inode (char *path)
-{
-
- struct dir *cur_dir;
-
- // Start at root
- if (path[0] == '/')
- {
-    cur_dir = dir_open_root ();
-    path++;
- }
- // Else relative path
- else
- {
-    cur_dir = dir_reopen(thread_current ()->cur_dir);
- }
-
- char *token, *save_ptr;
- struct inode *cur_inode = NULL;
-
- for (token = strtok_r(path, "/", &save_ptr); token != NULL;
-     token = strtok_r(NULL, "/", &save_ptr))
- {
-    // If file doesn't exist in current directory
-    if (cur_dir == NULL || !dir_lookup(cur_dir, token, &cur_inode))
-    {
-      dir_close(cur_dir);
-      inode_close(cur_inode);
-      return NULL;
-    }
-
-    dir_close(cur_dir);
-
-    // cur_inode is a file. Either we're on the last token, or we fail. 
-    if (!inode_is_dir(cur_inode))
-    {
-      cur_dir = NULL;
-    }
-    else
-    {
-      cur_dir = dir_open(cur_inode);
-      inode_close(cur_inode);
-    }
- }
-
- return cur_inode;
-}
-*/
 
 
 

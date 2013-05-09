@@ -61,6 +61,7 @@ syscall_handler (struct intr_frame *f)
 	{
 		case SYS_HALT: // void halt (void)
       { 
+
 				shutdown_power_off();
 			  break;
       }
@@ -215,13 +216,14 @@ void syscall_exit (int status)
         list_pop_front(&thread_current ()->exit_list),
         struct exit, elem);
 
-    ex->abandoned = true;
-    
     /* If child already exited, reap. */
     if (ex->sema.value > 0)
     {
       free(ex);
     }
+
+    ex->abandoned = true;
+    
 
   }
 
@@ -232,7 +234,7 @@ void syscall_exit (int status)
   ex->status = status;
   sema_up(&ex->sema);
   
-  if (ex->abandoned && ex)
+  if (ex->abandoned)
   {
     free(ex);
   }

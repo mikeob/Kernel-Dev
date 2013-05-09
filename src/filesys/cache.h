@@ -26,6 +26,7 @@ void cache_mark_block_dirty (struct cache_block *b);
 
 void cache_flush (void);
 
+block_sector_t cache_get_sector (struct cache_block *b);
 
 /* TODO 1. Readahead
  *      2. Shutdown */

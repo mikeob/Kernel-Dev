@@ -7,6 +7,7 @@
 #include "threads/malloc.h"
 #include "threads/thread.h"
 
+
 /* A directory. */
 struct dir 
   {
@@ -22,26 +23,24 @@ struct dir_entry
     bool in_use;                        /* In use or free? */
   };
 
+static bool lookup (const struct dir *dir, const char *name, struct dir_entry *ep, off_t *ofsp);
+
 /* Creates a directory with space for ENTRY_CNT entries in the
    given SECTOR.  Returns true if successful, false on failure. */
 bool
 dir_create (block_sector_t sector, size_t entry_cnt)
 {
 
-  bool result = inode_create (sector, entry_cnt * sizeof (struct dir_entry), 
-      true);
+  bool result = inode_create (sector, 0, true); //entry_cnt * sizeof (struct dir_entry), 
+      //true);
+
+  if (!result)
+  {
+    return false;
+  }
   
   struct inode *new_inode = inode_open (sector);
-  if (new_inode == NULL)
-  {
-    PANIC("inode allocation failure");
-  }
-
   struct dir *new_dir = dir_open(new_inode);
-  if (new_dir == NULL)
-  {
-    PANIC("dir_open failure");
-  }
 
   // Add '.' and '..' references
   block_sector_t parent = sector == ROOT_DIR_SECTOR ? sector 
@@ -49,6 +48,7 @@ dir_create (block_sector_t sector, size_t entry_cnt)
 
   result = result && dir_add (new_dir, ".", sector);
   result = result && dir_add (new_dir, "..", parent);
+
 
   // Clean up
   //inode_close (new_inode);
@@ -130,6 +130,7 @@ lookup (const struct dir *dir, const char *name,
 
   for (ofs = 0; inode_read_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
        ofs += sizeof e) 
+  {
     if (e.in_use && !strcmp (name, e.name)) 
       {
         if (ep != NULL)
@@ -138,6 +139,7 @@ lookup (const struct dir *dir, const char *name,
           *ofsp = ofs;
         return true;
       }
+  }
   return false;
 }
 
@@ -149,13 +151,18 @@ bool
 dir_lookup (const struct dir *dir, const char *name,
             struct inode **inode) 
 {
+  //printf("dir_lookup %s\n", name);
+
   struct dir_entry e;
 
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
 
   if (lookup (dir, name, &e, NULL))
+  {
+    //printf("Lookup success! inode sector is %u\n", e.inode_sector);
     *inode = inode_open (e.inode_sector);
+  }
   else
     *inode = NULL;
 
@@ -171,7 +178,7 @@ dir_lookup (const struct dir *dir, const char *name,
 bool
 dir_add (struct dir *dir, const char *name, block_sector_t inode_sector)
 {
-  //printf("dir_add(%p, %s, %d)\n", dir, name, inode_sector);
+  //printf("dir_add(%s, %u)\n", name, inode_sector);
   struct dir_entry e;
   off_t ofs;
   bool success = false;
@@ -199,6 +206,7 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector)
     if (!e.in_use)
       break;
 
+
   /* Write slot. */
   e.in_use = true;
   strlcpy (e.name, name, sizeof e.name);
@@ -224,9 +232,14 @@ dir_remove (struct dir *dir, const char *name)
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
 
+  //printf("dir_remove(%p, %s)\n", dir, name);
+
   /* Find directory entry. */
   if (!lookup (dir, name, &e, &ofs))
+  {
+    //printf("Directory entry doesn't exist!\n");
     goto done;
+  }
 
 
   /* Open inode. */
@@ -275,7 +288,7 @@ dir_remove (struct dir *dir, const char *name)
   success = true;
 
  done:
-  if (!inode_is_dir (inode))
+  if (inode != NULL && !inode_is_dir (inode))
     inode_close (inode);
   return success;
 }

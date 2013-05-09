@@ -33,6 +33,7 @@ struct cache_block {
 /* Static variables */
 struct block *fs_device;
 static struct cache_block blocks[CACHE_LIMIT];
+struct semaphore num_evict;
 
 
 /* Static functions */
@@ -46,6 +47,7 @@ void cache_init (void)
   if (fs_device == NULL)
     PANIC ("No file system device found, can't initialize buffer cache.");
 
+  sema_init(&num_evict, CACHE_LIMIT);
 
   // Initialize the cache_blocks
   int i;
@@ -83,6 +85,8 @@ writeback(struct cache_block *b)
     block_write(fs_device, b->bs_id, b->data);
     b->dirty = false;
   }
+
+
 }
 
 
@@ -115,6 +119,19 @@ init_block(struct cache_block *b, block_sector_t sector)
   b->num_writers = 0;
   b->pending_requests = 0;
 }
+
+static void
+print_blocks (void)
+{
+  printf("PRINT_BLOCKS:\n");
+  int i;
+  for (i = 0; i < 3; i++)
+  {
+    printf("Block %d has bsid %d, valid %d, dirty %d readers: %d writers: %d\n", i,blocks[i].bs_id,
+        blocks[i].valid, blocks[i].dirty, blocks[i].num_readers, blocks[i].num_writers);
+  }
+
+}
  
 /* Attempts to secure a block for the provided sector.
  *
@@ -128,12 +145,24 @@ obtain_block (block_sector_t sector)
 
   // Check to see if block already here!
   int i;
-  for (i = 0; i < CACHE_LIMIT; i++) {
+  for (i = 0; i < CACHE_LIMIT; i++) 
+  {
     lock_acquire(&blocks[i].lock);
-    if (blocks[i].bs_id == sector)
+    if (blocks[i].valid && blocks[i].bs_id == sector)
+    {
+      // If the block is evictable and we're removing it from that
+      // state, update the semaphore
+      if (blocks[i].num_writers == 0 && blocks[i].num_readers == 0
+          && blocks[i].pending_requests == 0)
+      {
+        sema_down(&num_evict);
+      }
+
       return &blocks[i];
+    }
     lock_release(&blocks[i].lock);
   }
+
   
   return evict(sector);
 }
@@ -146,6 +175,9 @@ obtain_block (block_sector_t sector)
 static struct cache_block *
 evict (block_sector_t sector)
 {
+  // Mark that we're evicting a block
+  sema_down(&num_evict);
+  
   struct cache_block *b = NULL;
 
   // Attempt to find an evictable block
@@ -158,15 +190,14 @@ evict (block_sector_t sector)
     {
       break;
     }
-    lock_release(&b->lock);
 
+    lock_release(&b->lock);
     b = NULL;
   }
 
   // If failure
   if (b == NULL)
   {
-    //TODO Possibly just loop evict until success?
     PANIC("Evict failure in cache_block");
   }
 
@@ -181,12 +212,12 @@ evict (block_sector_t sector)
  * exclusive or shared access */
 struct cache_block * cache_get_block (block_sector_t sector, bool exclusive)
 {
-  
   struct cache_block *b = obtain_block(sector);
 
   // No need to acquire lock - we already have it!
 
   b->pending_requests++;
+  ASSERT(b->pending_requests > 0);
 
   if (exclusive)
   {
@@ -205,7 +236,10 @@ struct cache_block * cache_get_block (block_sector_t sector, bool exclusive)
 
   b->pending_requests--;
 
+  ASSERT(b->pending_requests >= 0);
+  ASSERT(b->bs_id == sector);
   lock_release(&b->lock);
+  ASSERT(b->bs_id == sector);
   return b;
 }
 
@@ -235,9 +269,10 @@ void cache_put_block (struct cache_block *b)
     return;
   }
 
-  //TODO If no requests pending, put up for eviction
+  // If no requests pending, put up for eviction
   if (b->pending_requests == 0)
   {
+    sema_up(&num_evict);
   }
 
   lock_release(&b->lock);
@@ -266,6 +301,7 @@ void *cache_zero_block (struct cache_block *b)
   lock_acquire(&b->lock);
   memset(b->data, 0, BLOCK_SIZE);
   b->valid = true;
+  b->dirty = true;
   lock_release(&b->lock);
 
   return b->data;
@@ -277,7 +313,13 @@ void cache_mark_block_dirty (struct cache_block *b)
 {
   lock_acquire(&b->lock);
   b->dirty = true;
+  writeback(b);
   lock_release(&b->lock);
+
 }
 
+block_sector_t cache_get_sector (struct cache_block *b)
+{
+  return b->bs_id;
+}
 

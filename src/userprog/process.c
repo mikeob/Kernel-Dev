@@ -137,7 +137,10 @@ process_wait (tid_t child_tid)
 
   int ans = ex->status;
   //free(&ex->sema); 
-  free(ex);
+  if (!ex->abandoned)
+  {
+  //  free(ex);
+  }
 
   return ans;
 }

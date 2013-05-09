@@ -6,19 +6,10 @@
 #include "filesys/inode.h"
 #include "threads/synch.h"
 
-/*
- *  TODO: 
- *    Possibly change the free map to write to 
- *    disk only every once and a while instead of 
- *    all the time
- *
- *
- *
- * */
-
 static struct file *free_map_file;   /* Free map file. */
 static struct bitmap *free_map;      /* Free map, one bit per sector. */
 static struct lock map_lock;         /* Lock on the free map */
+static bool init_complete;
 
 /* Initializes the free map. */
 void
@@ -30,6 +21,7 @@ free_map_init (void)
   bitmap_mark (free_map, FREE_MAP_SECTOR);
   bitmap_mark (free_map, ROOT_DIR_SECTOR);
   lock_init(&map_lock);
+  init_complete = true;
 }
 
 /* Allocates CNT consecutive sectors from the free map and stores
@@ -40,10 +32,11 @@ free_map_init (void)
 bool
 free_map_allocate (size_t cnt, block_sector_t *sectorp)
 {
+  ASSERT(cnt == 1);
   lock_acquire(&map_lock);
-
   block_sector_t sector = bitmap_scan_and_flip (free_map, 0, cnt, false);
-  if (sector != BITMAP_ERROR
+  if (init_complete 
+      && sector != BITMAP_ERROR
       && free_map_file != NULL
       && !bitmap_write (free_map, free_map_file))
     {
@@ -51,10 +44,26 @@ free_map_allocate (size_t cnt, block_sector_t *sectorp)
       sector = BITMAP_ERROR;
     }
   if (sector != BITMAP_ERROR)
+  {
     *sectorp = sector;
+  }
+
+  // When free_map is first being written to a file,
+  // we need to use free_map allocate!
 
   lock_release(&map_lock);
   return sector != BITMAP_ERROR;
+}
+
+bool
+free_map_flush (void)
+{
+  if (free_map_file != NULL && bitmap_write(free_map, free_map_file))
+  {
+    return true;
+  }
+
+  return false;
 }
 
 /* Makes CNT sectors starting at SECTOR available for use. */
@@ -73,16 +82,20 @@ void
 free_map_open (void) 
 {
   free_map_file = file_open (inode_open (FREE_MAP_SECTOR));
+  printf("file_open FREE_MAP all done\n");
   if (free_map_file == NULL)
     PANIC ("can't open free map");
   if (!bitmap_read (free_map, free_map_file))
     PANIC ("can't read free map");
+  //printf("free_map_open complete\n");
 }
 
 /* Writes the free map to disk and closes the free map file. */
 void
 free_map_close (void) 
 {
+  init_complete = true;
+  free_map_flush();
   file_close (free_map_file);
 }
 
@@ -99,6 +112,7 @@ free_map_create (void)
   free_map_file = file_open (inode_open (FREE_MAP_SECTOR));
   if (free_map_file == NULL)
     PANIC ("can't open free map");
+  init_complete = false;
   if (!bitmap_write (free_map, free_map_file))
     PANIC ("can't write free map");
 }
