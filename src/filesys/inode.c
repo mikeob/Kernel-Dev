@@ -82,7 +82,6 @@ expand_by_one (void)
 static block_sector_t
 MLI_translate (const struct inode *inode, block_sector_t blockno)
 {
-  //printf("MLI_translate(%u, %u)\n", inode->sector, blockno);
   block_sector_t ans = 0;
 
   // Grab a reference to the inode_disk
@@ -93,7 +92,6 @@ MLI_translate (const struct inode *inode, block_sector_t blockno)
   // If in the direct block
   if (blockno < N)
   {
-    //printf("disk->direct[%d] = %d\n", blockno, disk->direct[blockno]);
     // Expansion
     if (disk->direct[blockno] == 0)
     {
@@ -103,12 +101,10 @@ MLI_translate (const struct inode *inode, block_sector_t blockno)
       cb = cache_get_block(inode->sector, EXCLUSIVE);
       disk = (struct inode_disk *) cache_read_block(cb);
 
-      //printf("exclusive sector is %u\n", cache_get_sector(cb));
-
       disk->direct[blockno] = expand_by_one ();
-      //printf("Disk expansion for inode %u: disk->direct[%u] = %u\n",inode->sector, blockno, disk->direct[blockno]);
       cache_mark_block_dirty(cb);
     }
+    
 
     ans = disk->direct[blockno];
     cache_put_block(cb);
@@ -223,7 +219,6 @@ MLI_translate (const struct inode *inode, block_sector_t blockno)
     ans = index->blocks[di_offset];
     cache_put_block(cb);
   }
-  //printf("MLI_translation returning %u\n", ans);
 
   return ans;
 }
@@ -259,7 +254,6 @@ inode_init (void)
 bool
 inode_create (block_sector_t sector, off_t length, bool is_dir)
 {
-  //printf("inode_create (%u, %d, %d)\n", sector, length, is_dir);
   struct inode_disk *disk_inode = NULL;
   bool success = false;
 
@@ -272,11 +266,10 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
   disk_inode = calloc (1, sizeof *disk_inode);
   if (disk_inode != NULL)
     {
-      size_t sectors = bytes_to_sectors (length);
+      //size_t sectors = bytes_to_sectors (length);
       disk_inode->length = length;
       disk_inode->magic = INODE_MAGIC;
       disk_inode->is_dir = is_dir;
-      memset(disk_inode->direct, 0, N);
       disk_inode->indirect = 0;
       disk_inode->indirect_two = 0;
 
@@ -385,7 +378,7 @@ inode_is_dir (const struct inode *inode)
 /* Frees all of the sectors in a Multi-Level Index file */
 static void inode_free_data (struct inode *inode)
 {
-  struct cache_block *cb = cache_get_block(inode->sector, SHARED);
+  struct cache_block *cb = cache_get_block(inode->sector, EXCLUSIVE);
   struct inode_disk *disk = (struct inode_disk *) cache_read_block(cb);
 
   int i, j;
@@ -400,13 +393,14 @@ static void inode_free_data (struct inode *inode)
 
   block_sector_t indirect = disk->indirect;
   block_sector_t indirect_two = disk->indirect_two;
+  cache_mark_deleted(cb);
   cache_put_block(cb);
 
   struct index_block *index;
 
   if (indirect)
   {
-    cb = cache_get_block(indirect, SHARED);
+    cb = cache_get_block(indirect, EXCLUSIVE);
     index = (struct index_block *) cache_read_block(cb); 
 
     for (i = 0; i < INDEX_SIZE; i++)
@@ -419,12 +413,13 @@ static void inode_free_data (struct inode *inode)
     }
 
     free_map_release(indirect, 1);
+    cache_mark_deleted(cb);
     cache_put_block(cb);
   }
 
   if (indirect_two)
   {
-    cb = cache_get_block(indirect_two, SHARED);
+    cb = cache_get_block(indirect_two, EXCLUSIVE);
     index = (struct index_block *) cache_read_block(cb); 
 
     // For each indirect index
@@ -432,7 +427,7 @@ static void inode_free_data (struct inode *inode)
     {
       if (index->blocks[i])
       {
-        struct cache_block *cb_index = cache_get_block(index->blocks[i], SHARED);
+        struct cache_block *cb_index = cache_get_block(index->blocks[i], EXCLUSIVE);
         struct index_block *inner_index = 
           (struct index_block *) cache_read_block(cb_index);
 
@@ -446,11 +441,13 @@ static void inode_free_data (struct inode *inode)
 
         }
 
+        cache_mark_deleted(cb_index);
         cache_put_block(cb_index);
       }
     }
 
     free_map_release(indirect_two, 1);
+    cache_mark_deleted(cb);
     cache_put_block(cb);
   }
 
@@ -512,11 +509,6 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
   off_t bytes_read = 0;
   struct cache_block *cb;
 
-  if (inode_is_dir(inode))
-  {
-    lock_acquire(&inode->lock);
-  }
-
   while (size > 0) 
     {
 
@@ -551,11 +543,6 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
       bytes_read += chunk_size;
     }
 
-  if (inode_is_dir(inode))
-  {
-    lock_release(&inode->lock);
-  }
-
   return bytes_read;
 }
 
@@ -574,11 +561,6 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   if (inode->deny_write_cnt)
     return 0;
 
-  if (inode_is_dir(inode))
-  {
-    lock_acquire(&inode->lock);
-  }
-
   while (size > 0) 
     {
       /* Sector to write, starting byte offset within sector. */
@@ -594,7 +576,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
       int sector_ofs = offset % BLOCK_SECTOR_SIZE;
 
       /* Bytes left in inode, bytes left in sector, lesser of the two. */
-      off_t inode_left = inode_length (inode) - offset;
+      //off_t inode_left = inode_length (inode) - offset;
       int sector_left = BLOCK_SECTOR_SIZE - sector_ofs;
       //int min_left = inode_left < sector_left ? inode_left : sector_left;
       int min_left = sector_left;
@@ -628,21 +610,33 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
       bytes_written += chunk_size;
     }
 
-  if (inode_is_dir(inode))
-  {
-    lock_release(&inode->lock);
-  }
   
   // Actually mark the expansion
-  lock_acquire(&inode->lock);
+  if (!inode_is_dir(inode))
+    lock_acquire(&inode->lock);
+
   if (inode->length < size + offset) 
   {
     inode->dirty = true;
     inode->length = size + offset;
   }
-  lock_release(&inode->lock);
+
+  if (!inode_is_dir(inode))
+    lock_release(&inode->lock);
 
   return bytes_written;
+}
+
+void
+inode_lock (struct inode *inode)
+{
+  lock_acquire(&inode->lock);
+}
+
+void
+inode_release (struct inode *inode)
+{
+  lock_release (&inode->lock);
 }
 
 /* Disables writes to INODE.

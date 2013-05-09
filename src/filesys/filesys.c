@@ -9,6 +9,7 @@
 #include "filesys/inode.h"
 #include "filesys/directory.h"
 #include "filesys/cache.h"
+#include "filesys/fsutil.h"
 
 /* Partition that contains the file system. */
 struct block *fs_device;
@@ -31,6 +32,8 @@ filesys_init (bool format)
     do_format ();
 
   free_map_open ();
+
+  //fsutil_ls ((char **)NULL);
 }
 
 /* Shuts down the file system module, writing any unwritten data
@@ -38,8 +41,13 @@ filesys_init (bool format)
 void
 filesys_done (void) 
 {
+  //fsutil_ls ((char **)NULL);
+  //fsutil_cat ("tar");
   cache_flush ();
-  free_map_flush ();
+  if(!free_map_flush ())
+  {
+    PANIC("FILESYS_DONE NONO");
+  }
   free_map_close ();
 }
 
@@ -51,7 +59,6 @@ bool
 filesys_create (const char *name, off_t initial_size) 
 {
 
-  //printf("create(%s)\n", name);
   // Don't accept empty string
   if (strlen(name) == 0)
   {
@@ -140,7 +147,6 @@ filesys_chdir (const char *name)
 bool
 filesys_mkdir (const char *name)
 {
-  //printf("mkdir (%s)\n", name);
   if (strlen(name) == 0)
   {
     return false;
@@ -198,7 +204,6 @@ filesys_mkdir (const char *name)
 struct file *
 filesys_open (const char *name)
 {
-  //printf("filesys_open(%s)\n", name);
 
   char *copy = (char *) malloc(strlen(name) + 1); 
   if (copy == NULL)
@@ -220,12 +225,9 @@ filesys_open (const char *name)
   struct inode *inode;
   if (!dir_lookup(dir, filename, &inode))
   {
-    //printf("DIR_LOOKUP FAILURE IN FILESYS_OPEN\n");
   }
   dir_close (dir);
   free(copy);
-  //printf("Filesys_open given inode %p\n", inode);
-  //printf("inode sector is %u\n", inode_get_inumber(inode));
 
   return inode != NULL ? file_open (inode) : NULL;
 }
@@ -238,7 +240,6 @@ filesys_open (const char *name)
 bool
 filesys_remove (const char *name) 
 {
-  //printf("remove %s\n", name);
 
   char *copy = (char *) malloc(strlen(name) + 1); 
   if (copy == NULL)

@@ -21,6 +21,7 @@ struct cache_block {
   block_sector_t bs_id;        /* Indicates the block sector. 0 if unused */
   bool dirty;
   bool valid;
+  bool deleted;
   int num_readers;
   int num_writers;
   int pending_requests;         /* Number of pending read/write requests */
@@ -80,7 +81,7 @@ writeback(struct cache_block *b)
     PANIC("Dirty but not valid!");
   }
 
-  if (b->valid && b->dirty)
+  if (b->valid && b->dirty && !b->deleted)
   {
     block_write(fs_device, b->bs_id, b->data);
     b->dirty = false;
@@ -115,6 +116,7 @@ init_block(struct cache_block *b, block_sector_t sector)
   b->bs_id = sector;
   b->valid = false;
   b->dirty = false;
+  b->deleted = false;
   b->num_readers = 0;
   b->num_writers = 0;
   b->pending_requests = 0;
@@ -190,7 +192,6 @@ evict (block_sector_t sector)
     {
       break;
     }
-
     lock_release(&b->lock);
     b = NULL;
   }
@@ -323,3 +324,10 @@ block_sector_t cache_get_sector (struct cache_block *b)
   return b->bs_id;
 }
 
+
+void cache_mark_deleted (struct cache_block *b)
+{
+  lock_acquire(&b->lock);
+  b->deleted = true;
+  lock_release(&b->lock);
+}

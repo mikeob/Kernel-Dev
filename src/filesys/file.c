@@ -145,9 +145,7 @@ file_allow_write (struct file *file)
 int
 file_inumber (struct file *file)
 {
-
   return inode_get_inumber(file->inode);
-
 }
 
 /* Returns the size of FILE in bytes. */

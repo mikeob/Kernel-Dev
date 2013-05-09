@@ -31,8 +31,8 @@ bool
 dir_create (block_sector_t sector, size_t entry_cnt)
 {
 
-  bool result = inode_create (sector, 0, true); //entry_cnt * sizeof (struct dir_entry), 
-      //true);
+  bool result = inode_create (sector, entry_cnt * sizeof (struct dir_entry), 
+      true);
 
   if (!result)
   {
@@ -50,8 +50,6 @@ dir_create (block_sector_t sector, size_t entry_cnt)
   result = result && dir_add (new_dir, "..", parent);
 
 
-  // Clean up
-  //inode_close (new_inode);
   dir_close (new_dir);
 
   return result;
@@ -151,8 +149,7 @@ bool
 dir_lookup (const struct dir *dir, const char *name,
             struct inode **inode) 
 {
-  //printf("dir_lookup %s\n", name);
-
+  inode_lock (dir->inode);
   struct dir_entry e;
 
   ASSERT (dir != NULL);
@@ -160,11 +157,12 @@ dir_lookup (const struct dir *dir, const char *name,
 
   if (lookup (dir, name, &e, NULL))
   {
-    //printf("Lookup success! inode sector is %u\n", e.inode_sector);
     *inode = inode_open (e.inode_sector);
   }
   else
     *inode = NULL;
+
+  inode_release (dir->inode);
 
   return *inode != NULL;
 }
@@ -178,13 +176,14 @@ dir_lookup (const struct dir *dir, const char *name,
 bool
 dir_add (struct dir *dir, const char *name, block_sector_t inode_sector)
 {
-  //printf("dir_add(%s, %u)\n", name, inode_sector);
   struct dir_entry e;
   off_t ofs;
   bool success = false;
 
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
+
+  inode_lock (dir->inode);
 
   /* Check NAME for validity. */
   if (*name == '\0' || strlen (name) > NAME_MAX)
@@ -214,6 +213,7 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector)
   success = inode_write_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
 
  done:
+  inode_release(dir->inode);
   return success;
 }
 
@@ -232,12 +232,13 @@ dir_remove (struct dir *dir, const char *name)
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
 
-  //printf("dir_remove(%p, %s)\n", dir, name);
+  // Lock the directory
+  inode_lock(dir->inode);
 
   /* Find directory entry. */
   if (!lookup (dir, name, &e, &ofs))
   {
-    //printf("Directory entry doesn't exist!\n");
+    PANIC("Remove didn't find entry");
     goto done;
   }
 
@@ -290,6 +291,8 @@ dir_remove (struct dir *dir, const char *name)
  done:
   if (inode != NULL && !inode_is_dir (inode))
     inode_close (inode);
+
+  inode_release(dir->inode);
   return success;
 }
 
@@ -299,6 +302,7 @@ dir_remove (struct dir *dir, const char *name)
 bool
 dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
 {
+  inode_lock (dir->inode);
   struct dir_entry e;
 
   while (inode_read_at (dir->inode, &e, sizeof e, dir->pos) == sizeof e) 
@@ -307,9 +311,11 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
       if (e.in_use)
         {
           strlcpy (name, e.name, NAME_MAX + 1);
+          inode_release (dir->inode);
           return true;
         } 
     }
+  inode_release(dir->inode);
   return false;
 }
 
@@ -323,5 +329,5 @@ dir_print_dir (struct dir *dir)
     printf("%s\n", name);
   }
   dir_close(temp);
-  
 }
+

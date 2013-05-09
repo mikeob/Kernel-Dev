@@ -58,13 +58,19 @@ free_map_allocate (size_t cnt, block_sector_t *sectorp)
 bool
 free_map_flush (void)
 {
+  bool success = false;
+  lock_acquire(&map_lock);
   if (free_map_file != NULL && bitmap_write(free_map, free_map_file))
   {
-    return true;
+    success = true;
   }
-  PANIC("Free_map_flush error");
+  else
+  {
+    PANIC("Free_map_flush error");
+  }
+  lock_release(&map_lock);
 
-  return false;
+  return success;
 }
 
 /* Makes CNT sectors starting at SECTOR available for use. */
@@ -82,12 +88,15 @@ free_map_release (block_sector_t sector, size_t cnt)
 void
 free_map_open (void) 
 {
+  //bitmap_dump (free_map);
+  lock_acquire(&map_lock);
   free_map_file = file_open (inode_open (FREE_MAP_SECTOR));
-  printf("file_open FREE_MAP all done\n");
   if (free_map_file == NULL)
     PANIC ("can't open free map");
   if (!bitmap_read (free_map, free_map_file))
     PANIC ("can't read free map");
+  lock_release(&map_lock);
+  //bitmap_dump (free_map);
 }
 
 /* Writes the free map to disk and closes the free map file. */
@@ -104,6 +113,7 @@ free_map_close (void)
 void
 free_map_create (void) 
 {
+  init_complete = false;
   /* Create inode. */
   if (!inode_create (FREE_MAP_SECTOR, bitmap_file_size (free_map), false))
     PANIC ("free map creation failed");
@@ -112,7 +122,6 @@ free_map_create (void)
   free_map_file = file_open (inode_open (FREE_MAP_SECTOR));
   if (free_map_file == NULL)
     PANIC ("can't open free map");
-  init_complete = false;
   if (!bitmap_write (free_map, free_map_file))
     PANIC ("can't write free map");
 }
