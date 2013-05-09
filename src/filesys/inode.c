@@ -293,6 +293,13 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
       free (disk_inode);
     }
 
+  if (length > 0)
+  {
+    struct inode *inode = inode_open (sector);
+    inode_write_at(inode, "0", 1, length - 1);
+    inode_close(inode);
+  }
+
   return success;
 }
 
@@ -512,6 +519,11 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
 
   while (size > 0) 
     {
+
+      // Don't allow expansion
+      if (inode_length(inode) - offset <= 0)
+        break;
+
       /* Disk sector to read, starting byte offset within sector. */
       block_sector_t sector_idx = byte_to_sector (inode, offset);
       int sector_ofs = offset % BLOCK_SECTOR_SIZE;

@@ -170,6 +170,7 @@ fsutil_append (char **argv)
   static block_sector_t sector = 0;
 
   const char *file_name = argv[1];
+  printf("fsutil_append(%s\n", file_name);
   void *buffer;
   struct file *src;
   struct block *dst;

@@ -62,6 +62,7 @@ free_map_flush (void)
   {
     return true;
   }
+  PANIC("Free_map_flush error");
 
   return false;
 }
@@ -87,7 +88,6 @@ free_map_open (void)
     PANIC ("can't open free map");
   if (!bitmap_read (free_map, free_map_file))
     PANIC ("can't read free map");
-  //printf("free_map_open complete\n");
 }
 
 /* Writes the free map to disk and closes the free map file. */
