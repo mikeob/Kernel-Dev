@@ -296,7 +296,7 @@ inode_create (block_sector_t sector, off_t length, bool is_dir)
   if (length > 0)
   {
     struct inode *inode = inode_open (sector);
-    inode_write_at(inode, "0", 1, length - 1);
+    inode_write_at(inode, "", 1, length - 1);
     inode_close(inode);
   }
 
