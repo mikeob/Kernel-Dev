@@ -35,12 +35,12 @@ struct cache_block {
 struct block *fs_device;
 static struct cache_block blocks[CACHE_LIMIT];
 struct semaphore num_evict;
+int clock;
 
 
 /* Static functions */
 static void init_block(struct cache_block *b, block_sector_t sector);
 static struct cache_block * evict (block_sector_t sector);
-int clock;
 
 /* Initializes our cache buffer */
 void cache_init (void)

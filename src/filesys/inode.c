@@ -81,6 +81,12 @@ expand_by_one (void)
 static block_sector_t
 MLI_translate (const struct inode *inode, block_sector_t blockno)
 {
+
+
+  /* I read your Piazza post about a more efficient way to do
+   * this after I implemented it. I never got a chance to 
+   * rewrite it, so I apologize for the mess that is this
+   * function! */
   block_sector_t ans = 0;
 
   // Grab a reference to the inode_disk
