@@ -40,6 +40,7 @@ struct semaphore num_evict;
 /* Static functions */
 static void init_block(struct cache_block *b, block_sector_t sector);
 static struct cache_block * evict (block_sector_t sector);
+int clock;
 
 /* Initializes our cache buffer */
 void cache_init (void)
@@ -65,6 +66,7 @@ void cache_init (void)
       cond_init(&blocks[i].cond_read);
       init_block(&blocks[i], 0);
   }
+  clock = 0;
 }
 
 /* If the block is valid and dirty, writes it back
@@ -184,7 +186,7 @@ evict (block_sector_t sector)
 
   // Attempt to find an evictable block
   int i;
-  for (i = 0; i < CACHE_LIMIT; i++)
+  for (i = clock;; i = (clock + 1 + CACHE_LIMIT) % CACHE_LIMIT)
   {
     b = &blocks[i];
     lock_acquire(&b->lock);
@@ -194,7 +196,9 @@ evict (block_sector_t sector)
     }
     lock_release(&b->lock);
     b = NULL;
+    clock = i;
   }
+
 
   // If failure
   if (b == NULL)
@@ -314,7 +318,7 @@ void cache_mark_block_dirty (struct cache_block *b)
 {
   lock_acquire(&b->lock);
   b->dirty = true;
-  writeback(b);
+  //writeback(b);
   lock_release(&b->lock);
 
 }

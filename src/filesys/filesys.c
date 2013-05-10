@@ -43,6 +43,7 @@ filesys_done (void)
 {
   //fsutil_ls ((char **)NULL);
   //fsutil_cat ("tar");
+  //dir_print_dir(dir_open(dir_open_root()));
   cache_flush ();
   if(!free_map_flush ())
   {

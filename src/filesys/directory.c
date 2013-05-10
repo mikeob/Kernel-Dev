@@ -34,6 +34,7 @@ dir_create (block_sector_t sector, size_t entry_cnt)
   bool result = inode_create (sector, entry_cnt * sizeof (struct dir_entry), 
       true);
 
+
   if (!result)
   {
     return false;
@@ -322,6 +323,7 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
 void 
 dir_print_dir (struct dir *dir)
 {
+  printf("Dir_print_dir\n\n");
   struct dir * temp = dir_reopen(dir);
   char name[NAME_MAX + 1];
   while (dir_readdir (temp, name))

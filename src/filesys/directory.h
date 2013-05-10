@@ -9,8 +9,7 @@
    This is the traditional UNIX maximum length.
    After directories are implemented, this maximum length may be
    retained, but much longer full path names must be allowed. */
-//TODO Changed to 100 from the default 14
-#define NAME_MAX 100
+#define NAME_MAX 14
 
 struct inode;
 
