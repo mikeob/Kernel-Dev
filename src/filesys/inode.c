@@ -12,7 +12,7 @@
 
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
-#define N 122
+#define N 123
 #define INDEX_SIZE 128
 
 struct index_block
@@ -27,7 +27,6 @@ struct inode_disk
     block_sector_t direct[N];
     block_sector_t indirect;
     block_sector_t indirect_two;
-    block_sector_t start;               /* First data sector. */
     off_t length;                       /* File size in bytes. */
     bool is_dir;                        /* Is this a directory? */
     unsigned magic;                     /* Magic number. */
