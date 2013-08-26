@@ -139,6 +139,7 @@ fsutil_extract (char **argv UNUSED)
 
           /* Finish up. */
           file_close (dst);
+          printf("Done with %s\n", file_name);
         }
     }
 

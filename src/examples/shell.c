@@ -40,7 +40,7 @@ main (void)
         }
     }
 
-  printf ("Shell exiting.\n");
+  printf ("Shell exiting.");
   return EXIT_SUCCESS;
 }
 
@@ -56,17 +56,15 @@ read_line (char line[], size_t size)
     {
       char c;
       read (STDIN_FILENO, &c, 1);
-      
-			switch (c) 
+
+      switch (c) 
         {
-				case '\r':
-        case 10: // \r and \n
+        case '\r':
           *pos = '\0';
           putchar ('\n');
           return;
 
         case '\b':
-				case 127: // backspace with -v option
           backspace (&pos, line);
           break;
 

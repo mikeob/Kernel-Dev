@@ -38,6 +38,7 @@
 #include "devices/ide.h"
 #include "filesys/filesys.h"
 #include "filesys/fsutil.h"
+#include "filesys/cache.h"
 #endif
 
 /* Page directory with kernel mappings only. */
@@ -130,15 +131,14 @@ main (void)
   usb_storage_init ();
   ide_init ();
   locate_block_devices ();
+  cache_init ();
   filesys_init (format_filesys);
 #endif
 
   /* Set the current directory to the root */
   thread_current ()->cur_dir = dir_open_root ();
-	filesys_mkdir ("/etc");
 
   printf ("Boot complete.\n");
-
   
   /* Run actions specified on kernel command line. */
   run_actions (argv);

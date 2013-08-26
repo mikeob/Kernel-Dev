@@ -1,9 +1,16 @@
 #include "filesys/file.h"
 #include <debug.h>
+#include <stdio.h>
 #include "filesys/inode.h"
 #include "threads/malloc.h"
-#include "filesys/filesys.h"
-#include <stdio.h>
+
+/* An open file. */
+struct file 
+  {
+    struct inode *inode;        /* File's inode. */
+    off_t pos;                  /* Current position. */
+    bool deny_write;            /* Has file_deny_write() been called? */
+  };
 
 /* Opens a file for the given INODE, of which it takes ownership,
    and returns the new file.  Returns a null pointer if an
@@ -54,18 +61,6 @@ file_get_inode (struct file *file)
   return file->inode;
 }
 
-int 
-file_get_inumber (struct file *file)
-{
-  return inode_get_inumber(file->inode);
-}
-
-bool
-file_is_dir (struct file *file)
-{
-  return inode_is_dir(file->inode);
-}
-
 /* Reads SIZE bytes from FILE into BUFFER,
    starting at the file's current position.
    Returns the number of bytes actually read,
@@ -87,7 +82,7 @@ file_read (struct file *file, void *buffer, off_t size)
 off_t
 file_read_at (struct file *file, void *buffer, off_t size, off_t file_ofs) 
 {
-	return inode_read_at (file->inode, buffer, size, file_ofs);
+  return inode_read_at (file->inode, buffer, size, file_ofs);
 }
 
 /* Writes SIZE bytes from BUFFER into FILE,
@@ -100,7 +95,7 @@ file_read_at (struct file *file, void *buffer, off_t size, off_t file_ofs)
 off_t
 file_write (struct file *file, const void *buffer, off_t size) 
 {
-	off_t bytes_written = inode_write_at (file->inode, buffer, size, file->pos);
+  off_t bytes_written = inode_write_at (file->inode, buffer, size, file->pos);
   file->pos += bytes_written;
   return bytes_written;
 }
@@ -144,6 +139,13 @@ file_allow_write (struct file *file)
       file->deny_write = false;
       inode_allow_write (file->inode);
     }
+}
+
+/* Returns the inumber associated with the underlying inode */
+int
+file_inumber (struct file *file)
+{
+  return inode_get_inumber(file->inode);
 }
 
 /* Returns the size of FILE in bytes. */

@@ -28,18 +28,7 @@ enum
     SYS_MKDIR,                  /* Create a directory. */
     SYS_READDIR,                /* Reads a directory entry. */
     SYS_ISDIR,                  /* Tests if a fd represents a directory. */
-    SYS_INUMBER,                 /* Returns the inode number for a fd. */
-
-		/* Open ended project. */
-		SYS_SETUID,									/* Set the user id */
-		SYS_SETEUID,								/* Set the effective user id.*/
-		SYS_SETGID,									/* Set the group id */
-		SYS_SETEGID,								/* Set the effective group id */
-		SYS_GETUID,									/* Get the user id */
-		SYS_GETEUID,								/* Get the effective user id.*/
-		SYS_GETGID,									/* Get the group id */
-		SYS_GETEGID,								/* Get the effective group id */
-		SYS_CHMOD,									/* Change file permissions. */
+    SYS_INUMBER                 /* Returns the inode number for a fd. */
   };
 
 #endif /* lib/syscall-nr.h */

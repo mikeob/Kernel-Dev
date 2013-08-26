@@ -4,8 +4,7 @@ SRCDIR = ..
 # To add a new test, put its name on the PROGS list
 # and then add a name_SRC line that lists its source files.
 PROGS = cat cmp cp echo halt hex-dump ls mcat mcp mkdir pwd rm shell \
-	bubsort insult lineup matmult recursor login getty sudo chmod passwd \
-	touch write
+	bubsort insult lineup matmult recursor
 
 # Should work from project 2 onward.
 cat_SRC = cat.c
@@ -30,15 +29,6 @@ mcp_SRC = mcp.c
 mkdir_SRC = mkdir.c
 pwd_SRC = pwd.c
 shell_SRC = shell.c
-
-# Should work in open ended project.
-login_SRC = login.c cmdline.c hash.c verify.c
-getty_SRC = getty.c
-sudo_SRC = sudo.c cmdline.c hash.c
-chmod_SRC = chmod.c
-passwd_SRC = passwd.c cmdline.c hash.c verify.c
-touch_SRC = touch.c
-write_SRC = write.c
 
 include $(SRCDIR)/Make.config
 include $(SRCDIR)/Makefile.userprog

@@ -1,4 +1,4 @@
-                     +-------------------------+
+         +-------------------------+
          |    CS 140         |
          | PROJECT 4: FILE SYSTEMS |
          |     DESIGN DOCUMENT     |
@@ -8,14 +8,19 @@
 
 >> Fill in the names and email addresses of your group members.
 
-FirstName LastName <email@domain.example>
-FirstName LastName <email@domain.example>
-FirstName LastName <email@domain.example>
+Kevin Pike <kpike90@vt.edu>
+Ollie Harlowe <oharlowe@vt.edu>
+Mike O'Beirne <mobeirne@vt.edu>
 
 ---- PRELIMINARIES ----
 
 >> If you have any preliminary comments on your submission, notes for the
 >> TAs, or extra credit, please give them here.
+
+
+I ran all of my tests using bochs. Hopefully it'll work using 
+whatever emulator you grade with, but if not try using bochs.
+Thanks!
 
 >> Please cite any offline or online sources you consulted while
 >> preparing your submission, other than the Pintos documentation, course
@@ -30,13 +35,74 @@ FirstName LastName <email@domain.example>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+#define INODE_MAGIC 0x494e4f44
+#define N 123
+#define INDEX_SIZE 128
+
+
+struct index_block
+{
+  block_sector_t blocks[INDEX_SIZE];
+};
+
+Struct used to contain an indirect block, pointing to other blocks
+
+struct inode_disk
+  {
+    block_sector_t direct[N];           /* Direct Block */
+    block_sector_t indirect;            /* First Indirect block */
+    block_sector_t indirect_two;        /* Double indirect block */
+    off_t length;                       /* File size in bytes. */
+    bool is_dir;                        /* Is this a directory? */
+    unsigned magic;                     /* Magic number. */
+  };
+
+On-disk inode. Uses Multi-level indices with a doubly indirect block.
+
+/* In-memory inode. */
+struct inode
+  {
+    struct list_elem elem;              /* Element in inode list. */
+    block_sector_t sector;              /* Sector number of disk location. */
+    struct lock lock;                   /* Lock on the inode */
+    int open_cnt;                       /* Number of openers. */
+    bool removed;                       /* True if deleted, false otherwise. */
+    bool is_dir;                        /* True if inode represents directory */
+    bool dirty;
+    int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
+    off_t length;
+  };
+
+In memory inode. Pulls the length and is_dir from the inode_disk.
+
+
 >> A2: What is the maximum size of a file supported by your inode
 >> structure?  Show your work.
+
+Direct block size: 123
+Index block sizes: 128
+Block size: 512
+
+So this means we can hold 123 + 128 + 128*128 = 16,635 blocks.
+This equates to 8,517,120 bytes or a little over 8 megabytes.
 
 ---- SYNCHRONIZATION ----
 
 >> A3: Explain how your code avoids a race if two processes attempt to
 >> extend a file at the same time.
+
+File extension is done sparsely when the particular block associated with an 
+offset is not present. This would mean that as both of the writers are 
+writing, either of them could be the one that actually initializes the
+new blocks.
+
+Once the file has been extended and given additional space and both
+processes attempt to actually increase the size of the inode,
+the bigger one is accepted (and there's a lock on changing the inode
+file size).
+
+The size of the file is lazily written back to the on-disk inode
+every time the inode is closed, given that the inode is 'dirty'.
 
 >> A4: Suppose processes A and B both have file F open, both
 >> positioned at end-of-file.  If A reads and B writes F at the same
@@ -45,12 +111,35 @@ FirstName LastName <email@domain.example>
 >> nonzero data, A is not allowed to see all zeros.  Explain how your
 >> code avoids this race.
 
+Assume A attempts to read first. A sees that it's attempting to read
+past the inode length, and returns. Then B goes on and extends it.
+
+Assume B writes first. When B extends the file, it makes sure to
+write to it and be completely finished before changing the inode's
+length value. Thus A is blocked from reading the new blocks, even 
+if they exist, until B is done writing.
+
 >> A5: Explain how your synchronization design provides "fairness".
 >> File access is "fair" if readers cannot indefinitely block writers
 >> or vice versa.  That is, many processes reading from a file cannot
 >> prevent forever another process from writing the file, and many
 >> processes writing to a file cannot prevent another process forever
 >> from reading the file.
+
+Unfortunately we're at the whim of the kernel code using the blocks,
+so we cannot interrupt mid-reading in order to give the block to a 
+writer.
+
+That being said, unless the writing is one that would change the 
+data in a fragile way (file growth, on_disk_inode data, etc.), 
+writing is done with shared access. 
+
+So with that, we can have multiple readers/writers most of the time.
+
+To balance things slightly with exclusive access, once that exclusive
+access is finished I make sure to broadcast to readers before signaling
+a writer. I believe this puts readers in line to acquire the lock before
+writers, giving them a chance.
 
 ---- RATIONALE ----
 
@@ -59,6 +148,12 @@ FirstName LastName <email@domain.example>
 >> indirect blocks?  If not, why did you choose an alternative inode
 >> structure, and what advantages and disadvantages does your
 >> structure have, compared to a multilevel index?
+
+Mine is multilevel. I chose it because it seemed to be the most
+straight forward and was able to secure filesizes > 8 MB. 
+
+I didn't quite feel comfortable branching out and trying/inventing
+any new block types.
 
           SUBDIRECTORIES
           ==============
@@ -69,10 +164,22 @@ FirstName LastName <email@domain.example>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+I didn't actually need to change anything for subdirectories except
+for an is_dir bool in both the on-disk and in-memory inodes.
+
 ---- ALGORITHMS ----
 
 >> B2: Describe your code for traversing a user-specified path.  How
 >> do traversals of absolute and relative paths differ?
+
+Instead of having to create two functions with a lot of overlap,
+I simply created one function that traverses to the directory
+containing the file/directory in question, and pass back that
+directory along with the filename we're interested in.
+
+Then functions that needed to do various things (verify the filename
+is a directory, make something, remove something, etc) could handle
+it their own way.
 
 ---- SYNCHRONIZATION ----
 
@@ -81,15 +188,27 @@ FirstName LastName <email@domain.example>
 >> should succeed, as should only one of two simultaneous attempts to
 >> create a file with the same name, and so on.
 
+For any directory change (dir_lookup, dir_add, dir_remove) I would
+lock the underlying inode. This serializes any directory modification.
+
 >> B5: Does your implementation allow a directory to be removed if it
 >> is open by a process or if it is in use as a process's current
 >> working directory?  If so, what happens to that process's future
 >> file system operations?  If not, how do you prevent it?
 
+We check to see if the directory's inode is open by anything
+but the current process attempting to delete it. If it is,
+the request is denied.
+
 ---- RATIONALE ----
 
 >> B6: Explain why you chose to represent the current directory of a
 >> process the way you did.
+
+The current directory was just a directory struct. We would just
+reopen one every time we wanted to use it. I chose to reopen
+instead of directly use it because I didn't want to have to
+secure the offset, or fear of it being closed somewhere.
 
            BUFFER CACHE
            ============
@@ -100,14 +219,60 @@ FirstName LastName <email@domain.example>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
----- ALGORITHMS ----
+#define CACHE_LIMIT 64
+#define BLOCK_SIZE 512
+
+struct cache_block {
+  block_sector_t bs_id;        /* Indicates the block sector. 0 if unused */
+  bool dirty;                  /* Dirty bit */
+  bool valid;                  /* Is the data loaded? */
+  bool deleted;                /* If marked as deleted, don't write to it */
+  int num_readers;             /* Number of current readers */
+  int num_writers;             /* Number of current writers */
+  int pending_requests;         /* Number of pending read/write requests */
+  struct lock lock;
+  struct condition cond_write;  /* Condition variable for writers */
+  struct condition cond_read;   /* Condition variable for readers */
+  void * data;                  /* 512 bytes malloc()'d */
+};
+
+/* Static variables */
+struct block *fs_device;        // Reference to filesystem
+static struct cache_block blocks[CACHE_LIMIT];  // Array of cache blocks
+struct semaphore num_evict;     // Number of blocks available for eviction
+int clock;                      // Clock reference
+
+
+ ALGORITHMS ----
 
 >> C2: Describe how your cache replacement algorithm chooses a cache
 >> block to evict.
 
+There was nothing super fancy about my implementation, I'll admit.
+
+When a block is requested, we first check to see if that block
+is already resident & valid. If so, return it.
+
+If not, we go to evict. When evicting, we start at the index
+stored in 'clock', which is initialized at 0. We then move
+circularly through the cache_block array, attempting to
+find a block that:
+
+num_readers == 0, num_writers == 0, pending_requests == 0
+
+It didn't use any super sophisticated algorithms, but
+it seemed to work okay for me.
+
 >> C3: Describe your implementation of write-behind.
 
+A block is written back on eviction, and the entire
+cache is flushed upon filesys_close(). I never got 
+a chance to write a flush_timer, or something to incrementally
+call cache_flush().
+
 >> C4: Describe your implementation of read-ahead.
+
+I unfortunately didn't get read-ahead implemented.
 
 ---- SYNCHRONIZATION ----
 
@@ -115,13 +280,29 @@ FirstName LastName <email@domain.example>
 >> buffer cache block, how are other processes prevented from evicting
 >> that block?
 
+Eviction is only allowed when num_readers/num_writers/num_pending are
+all 0. These fields are locked with the cache_block->lock. Thus
+a block will never be evicted when it's reading/writing.
+
 >> C6: During the eviction of a block from the cache, how are other
 >> processes prevented from attempting to access the block?
+
+A lock is acquired on the block and is released at the earliest
+after pending_requests is incremented, making it no longer an 
+eviction target.
 
 ---- RATIONALE ----
 
 >> C7: Describe a file workload likely to benefit from buffer caching,
 >> and workloads likely to benefit from read-ahead and write-behind.
+
+Write-behind:
+Any file that is constantly being written to in small bits would
+benefit greatly from absorbing the writes.
+
+Read-ahead: 
+Any read-through of an entire file where every block is accessed
+sequentially would greatly benefit from this.
 
          SURVEY QUESTIONS
          ================
@@ -135,6 +316,9 @@ the quarter.
 >> In your opinion, was this assignment, or any one of the three problems
 >> in it, too easy or too hard?  Did it take too long or too little time?
 
+I'd say it was fair. Ideally it'd be more than just one person 
+working on it, but sometimes these things happen.
+
 >> Did you find that working on a particular part of the assignment gave
 >> you greater insight into some aspect of OS design?
 
@@ -145,4 +329,17 @@ the quarter.
 >> Do you have any suggestions for the TAs to more effectively assist
 >> students in future quarters?
 
+I know this is nothing new, but I found it extremely difficult
+to evenly distribute work. As much as they suck, group
+evaluations sometimes can encourage others to contribute evenly,
+even if there's no penalty.
+
 >> Any other comments?
+
+I'd like to thank you for offering this class this semester. I know
+it's incredibly time consuming, and it'd likely be easier to do what
+most other professors do where it's just an open class.
+
+While it's been pretty darn tough, I feel I've learned more about
+design, concurrency, and large projects in this class than any
+other I've been in.

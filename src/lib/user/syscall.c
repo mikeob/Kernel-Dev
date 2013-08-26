@@ -61,7 +61,6 @@
           retval;                                               \
         })
 
-
 void
 halt (void) 
 {
@@ -182,58 +181,4 @@ int
 inumber (int fd) 
 {
   return syscall1 (SYS_INUMBER, fd);
-}
-
-int
-setuid (int uid)
-{
-	return syscall1 (SYS_SETUID, uid);
-}
-
-int
-seteuid (int euid)
-{
-	return syscall1 (SYS_SETEUID, euid);
-}
-
-int
-setgid (int gid)
-{
-	return syscall1 (SYS_SETGID, gid);
-}
-
-int
-setegid (int egid)
-{
-	return syscall1 (SYS_SETEGID, egid);
-}
-
-int
-getuid ()
-{
-	return syscall0 (SYS_GETUID);
-}
-
-int
-geteuid ()
-{
-	return syscall0 (SYS_GETEUID);
-}
-
-int
-getgid ()
-{
-	return syscall0 (SYS_GETGID);
-}
-
-int
-getegid ()
-{
-	return syscall0 (SYS_GETEGID);
-}
-
-int
-chmod (const char *path, int permission_map)
-{
-	return syscall2 (SYS_CHMOD, path, permission_map);
 }

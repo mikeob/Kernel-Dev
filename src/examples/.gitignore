@@ -16,17 +16,6 @@ insult
 lineup
 matmult
 recursor
-login
-sudo
-chmod
-passwd
-useradd
-userdel
-groupadd
-groupdel
-getty
-touch
-write
 *.d
 *.o
 *.a

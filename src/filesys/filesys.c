@@ -8,13 +8,13 @@
 #include "filesys/free-map.h"
 #include "filesys/inode.h"
 #include "filesys/directory.h"
+#include "filesys/cache.h"
+#include "filesys/fsutil.h"
 
 /* Partition that contains the file system. */
 struct block *fs_device;
 
 static void do_format (void);
-static struct inode *path_to_inode (char *path);
-static bool verbose = false;
 
 /* Initializes the file system module.
    If FORMAT is true, reformats the file system. */
@@ -32,6 +32,8 @@ filesys_init (bool format)
     do_format ();
 
   free_map_open ();
+
+  //fsutil_ls ((char **)NULL);
 }
 
 /* Shuts down the file system module, writing any unwritten data
@@ -39,6 +41,14 @@ filesys_init (bool format)
 void
 filesys_done (void) 
 {
+  //fsutil_ls ((char **)NULL);
+  //fsutil_cat ("tar");
+  //dir_print_dir(dir_open(dir_open_root()));
+  cache_flush ();
+  if(!free_map_flush ())
+  {
+    PANIC("FILESYS_DONE NONO");
+  }
   free_map_close ();
 }
 
@@ -50,7 +60,7 @@ bool
 filesys_create (const char *name, off_t initial_size) 
 {
 
-	// Don't accept empty string
+  // Don't accept empty string
   if (strlen(name) == 0)
   {
     return false;
@@ -68,105 +78,33 @@ filesys_create (const char *name, off_t initial_size)
 
   block_sector_t inode_sector = 0;
   struct dir *dir = filesys_path_to_dir(copy, &filename);
+
   
   bool success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
                   && inode_create (inode_sector, initial_size, false)
                   && dir_add (dir, filename, inode_sector));
+
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);
-
-	
   dir_close (dir);
 
   free(copy);
 
-	char * shell = "shell";
-	char * sudo = "sudo";
-	char * chmod = "chmod";
-  char * echo = "echo";
-	char * passwd = "passwd";
-  char * touch = "touch";
-	char * cat = "cat";
-	char * write = "write";
-	char * ls = "ls";
-
-	if (!strcmp (name, shell))
-		filesys_chmod (name, false, false, 7, 4, 1);
-
-	if (!strcmp (name, sudo))
-		filesys_chmod (name, true, false, 7, 4, 0);	 
-
-	if (!strcmp (name, chmod))
-		filesys_chmod (name, false, false, 7, 4, 1);
-
-	if (!strcmp (name, echo))
-		filesys_chmod (name, false, false, 7, 4, 1);
-
-	if (!strcmp (name, passwd))
-		filesys_chmod (name, true, false, 7, 4, 1);
-
-  if (!strcmp (name, touch))
-		filesys_chmod (name, false, false, 7, 4, 1);
-
-  if (!strcmp (name, cat))
-		filesys_chmod (name, false, false, 7, 4, 1);
-
-  if (!strcmp (name, write))
-		filesys_chmod (name, false, false, 7, 4, 1);
-
-	return success;
-}
-
-bool
-filesys_chmod (const char *name, bool setuid, bool setgid, uint8_t user, uint8_t group, uint8_t others)
-{
-
-
-  if (strlen(name) == 0)
-  {
-    return false;
-  }
-
-  char *copy = (char *) malloc(strlen(name) + 1); 
-  if (copy == NULL)
-  {
-    PANIC("Malloc failure");
-  }
-
-  strlcpy(copy, name, strlen(name) + 1);
-
-  struct inode *inode;
-  char *filename;
-
-  struct dir *dir = filesys_path_to_dir(copy, &filename);
-
-  if (dir == NULL)
-  {
-    return false;
-  }
-  bool success = false;
-
-  if (dir_lookup(dir, filename, &inode))
-  {
-		if (setuid)
-			inode_chmod(inode, FILE_SETUID, 0);
-		if (setgid)
-			inode_chmod(inode, FILE_SETGID, 0);
-    inode_chmod(inode, FILE_USER, user);
-    inode_chmod(inode, FILE_GROUP, group);
-    inode_chmod(inode, FILE_OTHER, others);
-    success = true;
-  }
-
   return success;
 }
 
-
+/* Given an absolute or relative path,
+ * changes the current directory to the 
+ * corresponding directory.
+ *
+ * Fails upon empty path, non-existant directory,
+ * or directory is just a file */
 bool 
 filesys_chdir (const char *name)
 {
 
+
   if (strlen(name) == 0)
   {
     return false;
@@ -184,6 +122,7 @@ filesys_chdir (const char *name)
   char *filename;
 
   struct dir *dir = filesys_path_to_dir(copy, &filename);
+
 
   if (dir == NULL)
   {
@@ -192,10 +131,16 @@ filesys_chdir (const char *name)
 
   if (dir_lookup(dir, filename, &inode) && inode_is_dir(inode))
   {
-    dir_close(thread_current()->cur_dir);
+    struct dir *old = thread_current ()->cur_dir;
     thread_current ()->cur_dir = dir_open(inode);
+    dir_close(dir);
+    dir_close(old);
     return true;
   }
+
+
+
+  dir_close (dir);
 
   return false;
 }
@@ -203,12 +148,8 @@ filesys_chdir (const char *name)
 bool
 filesys_mkdir (const char *name)
 {
-  if (verbose) {printf("filesys_mkdir(%s)\n", name);}
   if (strlen(name) == 0)
   {
-
-    if (verbose) {printf("Failing mkdir, non-existant path\n");}
-
     return false;
   }
 
@@ -229,52 +170,28 @@ filesys_mkdir (const char *name)
 
   if (dir == NULL)
   {
-    if (verbose) { printf("filesys_path_to_dir failed\n"); }
     return false;
   }
 
   // If something already exists with that name
   if (dir_lookup(dir, filename, &inode))
   {
-    if (verbose) { printf("File/directory already exists\n"); }
     dir_close(dir);
     inode_close(inode);
     return false;
   }
 
-  if (verbose) {printf("filename = %s\n", filename);}
   bool success = (free_map_allocate (1, &inode_sector)
                   && dir_create(inode_sector, 16)
                   && dir_add(dir, filename, inode_sector));
-/*
-  bool success = true;
 
-  if (!free_map_allocate (1, &inode_sector))
-  {
-    printf("free_map_allocate fail\n");
-     success = false;
-  }
-  if (!dir_add(dir, filename, inode_sector))
-  {
-    printf("dir_add fail!\n");
-    success = false;
-  }
 
-  //printf("free sector is %d\n", inode_sector);
-  if (!dir_create(inode_sector, 16))
-  {
-    printf("dir_create fail\n");
-    success = false;
-  }
-
-*/
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);
 
+
   dir_close (dir);
   free(copy);
-
-  if (verbose && success) {printf("mkdir success!\n");}
 
   return success;
 
@@ -304,21 +221,27 @@ filesys_open (const char *name)
   {
     return NULL;
   }
+
   
   struct inode *inode;
-  dir_lookup(dir, filename, &inode);
-
+  if (!dir_lookup(dir, filename, &inode))
+  {
+  }
+  dir_close (dir);
   free(copy);
+
   return inode != NULL ? file_open (inode) : NULL;
 }
 
-/* Deletes the file named NAME.
+
+/* Deletes the file or empty directory named NAME.
    Returns true if successful, false on failure.
    Fails if no file named NAME exists,
    or if an internal memory allocation fails. */
 bool
 filesys_remove (const char *name) 
 {
+
   char *copy = (char *) malloc(strlen(name) + 1); 
   if (copy == NULL)
   {
@@ -329,10 +252,10 @@ filesys_remove (const char *name)
   char *filename;
 
   struct dir *dir = filesys_path_to_dir (copy, &filename);
+
   bool success = dir != NULL && dir_remove (dir, filename);
   dir_close (dir); 
   free(copy);
-
   return success;
 }
 
@@ -352,11 +275,17 @@ filesys_path_to_dir (char *path, char **filename)
 
   struct dir *cur_dir;
 
+  /* Special case for path == "/" */
+  if (!strcmp(path, "/"))
+  {
+    *filename = ".";
+    return dir_open_root ();
+  }
+
   if (path[0] == '/')
   {
     cur_dir = dir_open_root ();
     path++;
-    //printf("dir_open_root is %p\n", cur_dir);
   }
   else
   {
@@ -371,6 +300,7 @@ filesys_path_to_dir (char *path, char **filename)
 
   if (token == NULL)
   {
+    dir_close(cur_dir);
     return NULL;
   }
 
@@ -383,6 +313,7 @@ filesys_path_to_dir (char *path, char **filename)
     // Nothing left to parse, success!
     if (token == NULL)
     {
+      inode_close(cur_inode);
       break;
     }
 
@@ -398,75 +329,14 @@ filesys_path_to_dir (char *path, char **filename)
     struct dir *old = cur_dir;
    
     // Descend 
-    //printf("DESCENDING! cur_dir = %p\n", cur_dir);
     //dir_close(cur_dir);
     cur_dir = dir_open(cur_inode);
-    //printf("cur_dir is %p\n", cur_dir);
 
     dir_close(old);
 
   }
 
   return cur_dir;
-}
-
-
-/* Given a -MUTABLE- path, returns the inode associated
- * with the last file in the path.
- *
- * Will fail if any of the inodes along
- * the way do not exist, or if they are files.
- *
- * The caller is expected to close the provided inode.
- *
- * */
-static struct inode *
-path_to_inode (char *path)
-{
-
- struct dir *cur_dir;
-
- // Start at root
- if (path[0] == '/')
- {
-    cur_dir = dir_open_root ();
-    path++;
- }
- // Else relative path
- else
- {
-    cur_dir = dir_reopen(thread_current ()->cur_dir);
- }
-
- char *token, *save_ptr;
- struct inode *cur_inode = NULL;
-
- for (token = strtok_r(path, "/", &save_ptr); token != NULL;
-     token = strtok_r(NULL, "/", &save_ptr))
- {
-    // If file doesn't exist in current directory
-    if (cur_dir == NULL || !dir_lookup(cur_dir, token, &cur_inode))
-    {
-      dir_close(cur_dir);
-      inode_close(cur_inode);
-      return NULL;
-    }
-
-    dir_close(cur_dir);
-
-    // cur_inode is a file. Either we're on the last token, or we fail. 
-    if (!inode_is_dir(cur_inode))
-    {
-      cur_dir = NULL;
-    }
-    else
-    {
-      cur_dir = dir_open(cur_inode);
-      inode_close(cur_inode);
-    }
- }
-
- return cur_inode;
 }
 
 

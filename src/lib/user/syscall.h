@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include <debug.h>
-#include <stdint.h>
 
 /* Process identifier. */
 typedef int pid_t;
@@ -45,16 +44,5 @@ bool mkdir (const char *dir);
 bool readdir (int fd, char name[READDIR_MAX_LEN + 1]);
 bool isdir (int fd);
 int inumber (int fd);
-
-/* Open ended project. */
-int setuid (int uid);
-int seteuid (int euid);
-int setgid (int gid);
-int setegid (int egid);
-int getuid (void);
-int geteuid (void);
-int getgid (void);
-int getegid (void);
-int chmod (const char *path, int);
 
 #endif /* lib/user/syscall.h */
