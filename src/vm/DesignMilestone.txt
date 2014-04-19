@@ -1,0 +1,187 @@
+Design Milestone
+2/28/2013
+
+Mike O'Beirne
+Ollie Harlowe
+Kevin Pike
+
+
+
+
+
+1. Supplemental Page Table
+
+DECLARATIONS:
+------------
+
+struct pagetable
+{
+  struct hash;
+};
+
+struct page_entry
+{
+  struct hash_elem;
+  void *  vaddr;
+  enum page_type type;
+  bool imported;      // First time being imported if false
+
+  struct swap_entry;
+  struct list_elem map_elem; // List element using for file mapping
+  struct list_elem frame_elem; // List element used for frame_table
+};
+
+enum page_type
+{
+  CODE,
+  DATA,
+  BSS,
+  STACK,
+  FILE
+};
+
+------------
+a) How is it populated?
+Every time a page is asked to be allocated, we will create
+a supplemental page table entry for it. This includes the
+code load when a program is executed. It is done lazily.
+
+b) How many elements will it contain?
+It will contain an element for every page table entry
+a process has. 
+
+c) How is it accessed?
+A hash function will be implemented such that page_entry->vaddr
+will be used as the hash. This way, page_entrys can be 
+retrieved by virtual addresses. 
+
+d) How many copies exist in the sysem?
+One per process
+
+e) How is it destroyed? (If applicable)
+Destroyed when the process is killed.
+
+
+
+2. Frame Table
+
+DECLARATIONS:
+------------
+// Declared in palloc.c
+struct hash user_used_pages;
+
+struct frame_entry
+{
+  struct list pages;  // Pages that refer to this frame
+	struct hash_elem hash;
+	void *vaddr;
+	struct thread *thread;
+};
+
+------------
+a) How is it populated?
+When a user page is allocated, a frame entry struct will
+be created and added to the user_used_pages hashtable. 
+
+b) How many elements will it contain?
+Essentially one per page of physical memory.
+
+c) How is it accessed?
+
+
+d) How many copies exist in the sysem?
+One.
+
+e) How is it destroyed? (If applicable)
+Destroyed on OS shutdown. 
+
+
+3. Swap Table
+
+DECLARATIONS:
+------------
+
+struct block swap_blk;  // Global block variable to be in swap.c
+
+struct swaptable
+{
+  struct list entries; 
+};
+
+struct swap_entry
+{
+  struct bitmap *b;   
+  struct list_elem elem;
+};
+
+Bitmap layout
+-------------------------
+| Sector | Offset | Used |
+-------------------------
+
+
+------------
+a) How is it populated?
+It will be initialized when created, creating
+the total number of entries needed.
+
+b) How many elements will it contain?
+It will contain as many elements as 
+pages exist in the SWAP_BLOCK.
+
+c) How is it accessed?
+There will be functions to either clear a swap_entry 
+(indicate it's free), or to get a free one. Once
+a swap entry is contained, there's read/write functionality
+included in the struct.
+
+
+d) How many copies exist in the sysem?
+One.
+
+e) How is it destroyed? (If applicable)
+It is not destroyed.
+
+
+
+Table of file mappings
+
+DECLARATIONS:
+------------
+
+struct file_mappings	// Struct for holding a list of mappings
+{
+	struct list mappings; // List of mappings
+};
+
+struct file_map // Mapping for a single file
+{
+  struct file *file; // Pointer to the file
+  mapid_t map;			 // Mapping to that file
+  struct list_elem elem; // Element for mappings list
+  struct list pages; // List of pages that this mapping uses
+};
+
+------------
+a) How is it populated?
+The file_mappings structure will be initialized when a thread is
+created. A file_map will be created when a mapping is requested
+by the process.
+
+b) How many elements will it contain?
+The file_map struct will contain one element per file 
+mmap'd to the current process. The struct file_mappings
+will hold the list of all mappings for that process.
+
+c) How is it accessed?
+The mapping list will be held within the thread struct so it will 
+be accessed through the individual thread that requested the mapping.
+
+d) How many copies exist in the sysem?
+One mapping list per process and one file_map
+for every file that is mapped.
+
+e) How is it destroyed? (If applicable)
+It's destroyed once the process is destoryed.
+That, or when munmap is called.
+

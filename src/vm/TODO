@@ -1,0 +1,12 @@
+
+
+
+TODO For the VM project
+-----------------------
+
+- Dealloction, so clear out the hash table and destroy the supp
+  page table entries, clearing their frames.
+
+- Pinning, how exactly can we go about this?
+
+- Synchronization of page table entries
